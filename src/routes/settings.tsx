@@ -71,7 +71,7 @@ function SettingsPage() {
                 max={120}
                 step={5}
                 value={[profile.focusMinutes]}
-                onValueChange={([v]) => update({ focusMinutes: v })}
+                onValueChange={(v) => update({ focusMinutes: v[0] ?? profile.focusMinutes })}
               />
             </div>
             <div>
@@ -85,7 +85,7 @@ function SettingsPage() {
                 max={30}
                 step={5}
                 value={[profile.breakMinutes]}
-                onValueChange={([v]) => update({ breakMinutes: v })}
+                onValueChange={(v) => update({ breakMinutes: v[0] ?? profile.breakMinutes })}
               />
             </div>
           </div>
@@ -95,7 +95,9 @@ function SettingsPage() {
           <h2 className="text-base font-semibold">Weekly availability</h2>
           <div className="mt-4 space-y-3">
             {dayKeys.map((d) => {
-              const day = profile.days[d];
+              const day = profile.days[d] ?? defaultDay;
+              const setDay = (patch: Partial<typeof day>) =>
+                update({ days: { ...profile.days, [d]: { ...day, ...patch } } });
               return (
                 <div key={d} className="flex flex-wrap items-center gap-3">
                   <span className="w-10 text-sm font-medium">{d}</span>

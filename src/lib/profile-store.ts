@@ -16,6 +16,8 @@ export type Profile = {
 
 export const dayKeys = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+export const defaultDay: DayAvailability = { wake: "07:30", sleep: "23:30", off: false };
+
 export const emptyProfile: Profile = {
   name: "",
   school: "",
