@@ -18,7 +18,8 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { dayKeys, defaultDay, useProfile, type Profile } from "@/lib/profile-store";
+import { AvailabilityEditor } from "@/components/AvailabilityEditor";
+import { useProfile, type Profile } from "@/lib/profile-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
