@@ -99,7 +99,7 @@ function CalendarPage() {
               key={d}
               onClick={() => setActiveDay(i)}
               className={cn(
-                "min-w-14 rounded-2xl px-3 py-2 text-sm font-medium transition-colors",
+                "min-w-14 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                 activeDay === i
                   ? "bg-primary text-primary-foreground"
                   : "bg-card text-muted-foreground shadow-soft",
@@ -154,7 +154,7 @@ function CalendarPage() {
             {visibleDays.map((d) => (
               <div
                 key={d}
-                className="relative rounded-2xl bg-surface/60"
+                className="relative rounded-xl bg-surface/60"
                 style={{ height: (DAY_END - DAY_START) * HOUR_PX }}
               >
                 {Array.from({ length: DAY_END - DAY_START }, (_, i) => (
@@ -192,10 +192,10 @@ function CalendarPage() {
 
       <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="size-3 rounded-md bg-primary/80" /> Class or commitment
+          <span className="size-3 rounded-sm bg-primary/80" /> Class or commitment
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-3 rounded-md border-2 border-dashed border-primary" /> AI suggestion
+          <span className="size-3 rounded-sm border-2 border-dashed border-primary" /> AI suggestion
         </span>
         <span className="flex items-center gap-1.5">
           <Sparkles className="size-3" /> Tap a block for the reasoning
@@ -224,7 +224,7 @@ function EventBubble({
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "absolute inset-x-1 z-20 overflow-hidden rounded-2xl px-2 py-1.5 text-left transition-transform hover:scale-[1.02] active:scale-100",
+            "absolute inset-x-1 z-20 overflow-hidden rounded-[10px] px-2 py-1 text-left transition-transform hover:scale-[1.01] active:scale-100",
             suggested && "border-2 border-dashed",
           )}
           style={{
@@ -237,23 +237,23 @@ function EventBubble({
         >
           <span className="flex items-start gap-1">
             {suggested ? <Sparkles className="mt-0.5 size-3 shrink-0" /> : null}
-            <span className="line-clamp-2 text-[11px] font-semibold leading-tight">
+            <span className="line-clamp-2 break-words text-[11px] font-semibold leading-tight">
               {event.title}
             </span>
           </span>
-          {height > 44 ? (
+          {height > 52 ? (
             <span className="mt-0.5 block text-[10px] opacity-80">
               {formatHour(event.start)} – {formatHour(event.end)}
             </span>
           ) : null}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 rounded-3xl">
+      <PopoverContent className="w-72 rounded-2xl">
         <p className="font-semibold leading-snug">{event.title}</p>
         <p className="mt-0.5 text-sm text-muted-foreground">
           {c.short} · {formatHour(event.start)} – {formatHour(event.end)}
         </p>
-        <div className="mt-3 rounded-2xl bg-surface p-3">
+        <div className="mt-3 rounded-xl bg-surface p-3">
           <p className="flex items-center gap-1.5 text-xs font-semibold">
             <Sparkles className="size-3 text-primary" /> Why here
           </p>

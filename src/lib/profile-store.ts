@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 
-export type DayAvailability = { wake: string; sleep: string; off: boolean };
+export type AvailabilityRule = {
+  id: string;
+  days: string[];
+  start: string;
+  end: string;
+};
 
 export type Profile = {
   name: string;
   school: string;
-  rhythm: "morning" | "afternoon" | "night" | "";
-  days: Record<string, DayAvailability>;
+  rhythm: "morning" | "afternoon" | "evening" | "night" | "";
+  availability: AvailabilityRule[];
   focusMinutes: number;
   breakMinutes: number;
   commitments: string[];
@@ -16,18 +21,25 @@ export type Profile = {
 
 export const dayKeys = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export const defaultDay: DayAvailability = { wake: "07:30", sleep: "23:30", off: false };
+export const weekdayKeys = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+export function newRule(days: string[] = weekdayKeys): AvailabilityRule {
+  return {
+    id: Math.random().toString(36).slice(2, 9),
+    days,
+    start: "08:00",
+    end: "22:00",
+  };
+}
 
 export const emptyProfile: Profile = {
   name: "",
   school: "",
   rhythm: "",
-  days: Object.fromEntries(
-    dayKeys.map((d) => [
-      d,
-      { wake: d === "Sat" || d === "Sun" ? "09:00" : "07:30", sleep: "23:30", off: false },
-    ]),
-  ) as Record<string, DayAvailability>,
+  availability: [
+    { id: "weekdays", days: [...weekdayKeys], start: "08:00", end: "22:00" },
+    { id: "weekend", days: ["Sat", "Sun"], start: "10:00", end: "20:00" },
+  ],
   focusMinutes: 50,
   breakMinutes: 10,
   commitments: [],
@@ -44,7 +56,16 @@ export function useProfile() {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(KEY);
-      if (raw) setProfile({ ...emptyProfile, ...(JSON.parse(raw) as Profile) });
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<Profile>;
+        setProfile({
+          ...emptyProfile,
+          ...parsed,
+          availability: parsed.availability?.length
+            ? parsed.availability
+            : emptyProfile.availability,
+        });
+      }
     } catch {
       /* ignore malformed storage */
     }

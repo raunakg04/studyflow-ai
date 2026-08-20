@@ -9,6 +9,7 @@ import {
   Plus,
   Sparkles,
   Sun,
+  Sunrise,
   Sunset,
   X,
 } from "lucide-react";
@@ -16,9 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
-import { dayKeys, defaultDay, useProfile, type Profile } from "@/lib/profile-store";
+import { AvailabilityEditor } from "@/components/AvailabilityEditor";
+import { useProfile, type Profile } from "@/lib/profile-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/onboarding")({
@@ -115,7 +116,7 @@ function Onboarding() {
 const stepTitles = [
   "First, the basics",
   "When do you do your best work?",
-  "When are you awake?",
+  "When are you free?",
   "How long can you focus?",
   "Anything recurring in your week?",
   "Bring in your deadlines",
@@ -125,7 +126,7 @@ const stepTitles = [
 const stepSubtitles = [
   "So the assistant knows who it's planning for.",
   "Study blocks get placed in your sharpest hours first.",
-  "Nothing gets scheduled outside these hours.",
+  "Pick the days a time range applies to — add more rules for days that differ.",
   "We'll size study blocks to match your attention span.",
   "Work, sports, clubs — these stay protected on your calendar.",
   "Connect Canvas and Google Calendar so nothing gets missed.",
@@ -171,9 +172,10 @@ function StepBody({
 
   if (step === 1) {
     const options = [
-      { key: "morning" as const, icon: Sun, label: "Early bird", desc: "Sharpest before noon" },
-      { key: "afternoon" as const, icon: Sunset, label: "Afternoon", desc: "Peak from 1–6 PM" },
-      { key: "night" as const, icon: Moon, label: "Night owl", desc: "Focus after dinner" },
+      { key: "morning" as const, icon: Sunrise, label: "Morning", desc: "Before noon" },
+      { key: "afternoon" as const, icon: Sun, label: "Afternoon", desc: "12 – 4 PM" },
+      { key: "evening" as const, icon: Sunset, label: "Evening", desc: "4 – 8 PM" },
+      { key: "night" as const, icon: Moon, label: "Night", desc: "8 PM onwards" },
     ];
     return (
       <div className="grid gap-3">
@@ -202,42 +204,10 @@ function StepBody({
 
   if (step === 2)
     return (
-      <div className="space-y-3">
-        {dayKeys.map((d) => {
-          const day = profile.days[d] ?? defaultDay;
-          const setDay = (patch: Partial<typeof day>) =>
-            update({ days: { ...profile.days, [d]: { ...day, ...patch } } });
-          return (
-            <div
-              key={d}
-              className="flex flex-wrap items-center gap-2 rounded-2xl bg-card p-3 shadow-soft"
-            >
-              <span className="w-9 text-sm font-medium">{d}</span>
-              <Input
-                type="time"
-                aria-label={`${d} wake time`}
-                value={day.wake}
-                onChange={(e) => setDay({ wake: e.target.value })}
-                disabled={day.off}
-                className="w-28 rounded-xl"
-              />
-              <span className="text-xs text-muted-foreground">to</span>
-              <Input
-                type="time"
-                aria-label={`${d} sleep time`}
-                value={day.sleep}
-                onChange={(e) => setDay({ sleep: e.target.value })}
-                disabled={day.off}
-                className="w-28 rounded-xl"
-              />
-              <div className="ml-auto flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Rest day</span>
-                <Switch checked={day.off} onCheckedChange={(v) => setDay({ off: v })} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <AvailabilityEditor
+        rules={profile.availability}
+        onChange={(availability) => update({ availability })}
+      />
     );
 
   if (step === 3)
