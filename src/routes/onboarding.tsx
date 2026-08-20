@@ -116,7 +116,7 @@ function Onboarding() {
 const stepTitles = [
   "First, the basics",
   "When do you do your best work?",
-  "When are you awake?",
+  "When are you free?",
   "How long can you focus?",
   "Anything recurring in your week?",
   "Bring in your deadlines",
@@ -126,7 +126,7 @@ const stepTitles = [
 const stepSubtitles = [
   "So the assistant knows who it's planning for.",
   "Study blocks get placed in your sharpest hours first.",
-  "Nothing gets scheduled outside these hours.",
+  "Pick the days a time range applies to — add more rules for days that differ.",
   "We'll size study blocks to match your attention span.",
   "Work, sports, clubs — these stay protected on your calendar.",
   "Connect Canvas and Google Calendar so nothing gets missed.",
