@@ -172,9 +172,10 @@ function StepBody({
 
   if (step === 1) {
     const options = [
-      { key: "morning" as const, icon: Sun, label: "Early bird", desc: "Sharpest before noon" },
-      { key: "afternoon" as const, icon: Sunset, label: "Afternoon", desc: "Peak from 1–6 PM" },
-      { key: "night" as const, icon: Moon, label: "Night owl", desc: "Focus after dinner" },
+      { key: "morning" as const, icon: Sunrise, label: "Morning", desc: "Before noon" },
+      { key: "afternoon" as const, icon: Sun, label: "Afternoon", desc: "12 – 4 PM" },
+      { key: "evening" as const, icon: Sunset, label: "Evening", desc: "4 – 8 PM" },
+      { key: "night" as const, icon: Moon, label: "Night", desc: "8 PM onwards" },
     ];
     return (
       <div className="grid gap-3">
