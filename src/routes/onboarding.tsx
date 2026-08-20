@@ -205,42 +205,10 @@ function StepBody({
 
   if (step === 2)
     return (
-      <div className="space-y-3">
-        {dayKeys.map((d) => {
-          const day = profile.days[d] ?? defaultDay;
-          const setDay = (patch: Partial<typeof day>) =>
-            update({ days: { ...profile.days, [d]: { ...day, ...patch } } });
-          return (
-            <div
-              key={d}
-              className="flex flex-wrap items-center gap-2 rounded-2xl bg-card p-3 shadow-soft"
-            >
-              <span className="w-9 text-sm font-medium">{d}</span>
-              <Input
-                type="time"
-                aria-label={`${d} wake time`}
-                value={day.wake}
-                onChange={(e) => setDay({ wake: e.target.value })}
-                disabled={day.off}
-                className="w-28 rounded-xl"
-              />
-              <span className="text-xs text-muted-foreground">to</span>
-              <Input
-                type="time"
-                aria-label={`${d} sleep time`}
-                value={day.sleep}
-                onChange={(e) => setDay({ sleep: e.target.value })}
-                disabled={day.off}
-                className="w-28 rounded-xl"
-              />
-              <div className="ml-auto flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Rest day</span>
-                <Switch checked={day.off} onCheckedChange={(v) => setDay({ off: v })} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <AvailabilityEditor
+        rules={profile.availability}
+        onChange={(availability) => update({ availability })}
+      />
     );
 
   if (step === 3)
