@@ -93,43 +93,11 @@ function SettingsPage() {
 
         <section className="rounded-3xl bg-card p-5 shadow-soft">
           <h2 className="text-base font-semibold">Weekly availability</h2>
-          <div className="mt-4 space-y-3">
-            {dayKeys.map((d) => {
-              const day = profile.days[d] ?? defaultDay;
-              const setDay = (patch: Partial<typeof day>) =>
-                update({ days: { ...profile.days, [d]: { ...day, ...patch } } });
-              return (
-                <div key={d} className="flex flex-wrap items-center gap-3">
-                  <span className="w-10 text-sm font-medium">{d}</span>
-                  <Input
-                    type="time"
-                    value={day.wake}
-                    onChange={(e) =>
-                      update({ days: { ...profile.days, [d]: { ...day, wake: e.target.value } } })
-                    }
-                    className="w-30 rounded-xl"
-                  />
-                  <span className="text-sm text-muted-foreground">to</span>
-                  <Input
-                    type="time"
-                    value={day.sleep}
-                    onChange={(e) =>
-                      update({ days: { ...profile.days, [d]: { ...day, sleep: e.target.value } } })
-                    }
-                    className="w-30 rounded-xl"
-                  />
-                  <div className="ml-auto flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Day off</span>
-                    <Switch
-                      checked={day.off}
-                      onCheckedChange={(v) =>
-                        update({ days: { ...profile.days, [d]: { ...day, off: v } } })
-                      }
-                    />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="mt-4">
+            <AvailabilityEditor
+              rules={profile.availability}
+              onChange={(availability) => update({ availability })}
+            />
           </div>
         </section>
 
