@@ -188,7 +188,7 @@ export const events: CalendarEvent[] = [
   { id: "e4", title: "Read HIST Ch. 7", course: "hist", day: 1, start: 10, end: 11, kind: "study", rationale: "You approved this block yesterday." },
   { id: "e5", title: "ECON 201 Lecture", course: "econ", day: 1, start: 11.5, end: 12.75, kind: "class", rationale: "Imported from your Google Calendar." },
   { id: "e6", title: "PS4 deep work", course: "cs", day: 1, start: 16, end: 17.5, kind: "suggested", rationale: "Your last free block before the 11:59 PM deadline, and you rated mid-afternoon as your sharpest window." },
-  { id: "e7", title: "Enzyme lab write-up", course: "bio", day: 2, start: 9.5, end: 11, kind: "suggested", rationale: "No classes Wednesday morning — graphing goes faster when you're rested." },
+  { id: "e7", title: "Enzyme lab write-up", course: "bio", day: 2, start: 11, end: 12.5, kind: "suggested", rationale: "No classes Wednesday morning — graphing goes faster when you're rested." },
   { id: "e8", title: "CS 250 Lecture", course: "cs", day: 2, start: 9, end: 10.25, kind: "class", rationale: "Imported from your Google Calendar." },
   { id: "e9", title: "MATH 221 Tutoring", course: "math", day: 2, start: 15, end: 16, kind: "fixed", rationale: "Weekly commitment from onboarding." },
   { id: "e10", title: "ECON midterm review", course: "econ", day: 3, start: 14, end: 15.5, kind: "suggested", rationale: "First of four spaced sessions before Wednesday's exam — spacing beats cramming." },
