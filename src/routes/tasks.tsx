@@ -132,7 +132,7 @@ function TasksPage() {
                   <li key={t.id}>
                     <div
                       className={cn(
-                        "flex items-start gap-3 rounded-3xl bg-card p-4 shadow-soft transition-shadow hover:shadow-lifted",
+                        "flex items-start gap-3 rounded-2xl bg-card p-4 shadow-soft transition-shadow hover:shadow-lifted",
                         t.status === "done" && "opacity-60",
                       )}
                     >
@@ -156,7 +156,7 @@ function TasksPage() {
                         </p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
                           <span
-                            className="rounded-full px-2 py-0.5 font-medium"
+                            className="rounded-md px-2 py-0.5 font-medium"
                             style={{
                               backgroundColor: courses[t.course].color,
                               color: courses[t.course].ink,
@@ -164,14 +164,14 @@ function TasksPage() {
                           >
                             {courses[t.course].short}
                           </span>
-                          <span className="rounded-full bg-surface px-2 py-0.5 text-muted-foreground">
+                          <span className="rounded-md bg-surface px-2 py-0.5 text-muted-foreground">
                             {t.dueLabel}
                           </span>
-                          <span className="rounded-full bg-surface px-2 py-0.5 text-muted-foreground">
+                          <span className="rounded-md bg-surface px-2 py-0.5 text-muted-foreground">
                             ~{t.effortHours}h
                           </span>
                           {t.suggestions.length ? (
-                            <span className="flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 font-medium text-accent-foreground">
+                            <span className="flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 font-medium text-accent-foreground">
                               <Sparkles className="size-3" />
                               {t.suggestions.length} suggested
                             </span>
@@ -215,7 +215,7 @@ function TaskDetail({
             <div className="space-y-6 p-4 pt-0">
               <div className="flex flex-wrap gap-1.5 text-xs">
                 <span
-                  className="rounded-full px-2.5 py-1 font-medium"
+                  className="rounded-md px-2.5 py-1 font-medium"
                   style={{
                     backgroundColor: courses[task.course].color,
                     color: courses[task.course].ink,
@@ -223,10 +223,10 @@ function TaskDetail({
                 >
                   {courses[task.course].short}
                 </span>
-                <span className="rounded-full bg-surface px-2.5 py-1 text-muted-foreground">
+                <span className="rounded-md bg-surface px-2.5 py-1 text-muted-foreground">
                   {task.dueLabel}
                 </span>
-                <span className="rounded-full bg-surface px-2.5 py-1 text-muted-foreground">
+                <span className="rounded-md bg-surface px-2.5 py-1 text-muted-foreground">
                   {task.source === "canvas" ? "From Canvas" : "Added by you"}
                 </span>
               </div>
@@ -326,14 +326,29 @@ function AddTaskSheet() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="due">Due</Label>
+              <Label htmlFor="due">
+                Due <span className="text-muted-foreground">(optional)</span>
+              </Label>
               <Input id="due" type="date" className="rounded-xl" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="effort">Effort (hrs)</Label>
-              <Input id="effort" type="number" min={0.25} step={0.25} className="rounded-xl" />
+              <Label htmlFor="effort">
+                Effort <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="effort"
+                type="number"
+                min={0.25}
+                step={0.25}
+                placeholder="hrs"
+                className="rounded-xl"
+              />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            No deadline? Leave the date empty — it stays as a to-do the planner can slot into free
+            time.
+          </p>
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" rows={4} className="rounded-xl" placeholder="Anything the planner should know" />
