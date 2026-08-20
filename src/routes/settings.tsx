@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { dayKeys, defaultDay, useProfile } from "@/lib/profile-store";
+import { AvailabilityEditor } from "@/components/AvailabilityEditor";
+import { useProfile } from "@/lib/profile-store";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
