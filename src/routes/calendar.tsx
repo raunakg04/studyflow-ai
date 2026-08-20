@@ -224,7 +224,7 @@ function EventBubble({
       <PopoverTrigger asChild>
         <button
           className={cn(
-            "absolute inset-x-1 z-20 overflow-hidden rounded-lg px-2 py-1 text-left transition-transform hover:scale-[1.01] active:scale-100",
+            "absolute inset-x-1 z-20 overflow-hidden rounded-[10px] px-2 py-1 text-left transition-transform hover:scale-[1.01] active:scale-100",
             suggested && "border-2 border-dashed",
           )}
           style={{
@@ -237,11 +237,11 @@ function EventBubble({
         >
           <span className="flex items-start gap-1">
             {suggested ? <Sparkles className="mt-0.5 size-3 shrink-0" /> : null}
-            <span className="line-clamp-2 text-[11px] font-semibold leading-tight">
+            <span className="line-clamp-2 break-words text-[11px] font-semibold leading-tight">
               {event.title}
             </span>
           </span>
-          {height > 44 ? (
+          {height > 52 ? (
             <span className="mt-0.5 block text-[10px] opacity-80">
               {formatHour(event.start)} – {formatHour(event.end)}
             </span>

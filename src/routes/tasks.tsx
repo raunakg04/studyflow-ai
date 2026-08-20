@@ -132,7 +132,7 @@ function TasksPage() {
                   <li key={t.id}>
                     <div
                       className={cn(
-                        "flex items-start gap-3 rounded-2xl bg-card p-4 shadow-soft transition-shadow hover:shadow-lifted",
+                        "flex items-start gap-3 rounded-xl bg-card p-4 shadow-soft transition-shadow hover:shadow-lifted",
                         t.status === "done" && "opacity-60",
                       )}
                     >
