@@ -9,6 +9,7 @@ import {
   Plus,
   Sparkles,
   Sun,
+  Sunrise,
   Sunset,
   X,
 } from "lucide-react";
