@@ -10,11 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TasksRouteImport } from './routes/tasks'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarRoute = CalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -22,31 +29,44 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/tasks': typeof TasksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/tasks': typeof TasksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/calendar': typeof CalendarRoute
   '/settings': typeof SettingsRoute
+  '/tasks': typeof TasksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings'
+  fullPaths: '/' | '/calendar' | '/settings' | '/tasks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings'
-  id: '__root__' | '/' | '/settings'
+  to: '/' | '/calendar' | '/settings' | '/tasks'
+  id: '__root__' | '/' | '/calendar' | '/settings' | '/tasks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalendarRoute: typeof CalendarRoute
   SettingsRoute: typeof SettingsRoute
+  TasksRoute: typeof TasksRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +78,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/calendar': {
+      id: '/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -65,12 +92,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalendarRoute: CalendarRoute,
   SettingsRoute: SettingsRoute,
+  TasksRoute: TasksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
