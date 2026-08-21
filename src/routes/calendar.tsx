@@ -1,8 +1,18 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, ChevronLeft, ChevronRight, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import {
+  Check,
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+  Move,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   courses,
@@ -12,6 +22,7 @@ import {
   type CalendarEvent,
 } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/calendar")({
   head: () => ({
