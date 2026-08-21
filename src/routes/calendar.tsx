@@ -51,20 +51,28 @@ function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>(seedEvents);
   const [view, setView] = useState<"week" | "day">("week");
   const [activeDay, setActiveDay] = useState(3);
+  const [modify, setModify] = useState(false);
 
   const visibleDays = view === "week" ? weekDays.map((_, i) => i) : [activeDay];
+  const suggestedCount = events.filter((e) => e.kind === "suggested").length;
 
   function approve(id: string) {
     setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, kind: "study" } : e)));
   }
+  function approveAll() {
+    setEvents((prev) => prev.map((e) => (e.kind === "suggested" ? { ...e, kind: "study" } : e)));
+  }
   function remove(id: string) {
     setEvents((prev) => prev.filter((e) => e.id !== id));
+  }
+  function update(id: string, next: Partial<CalendarEvent>) {
+    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...next } : e)));
   }
 
   return (
     <AppShell
       title="Calendar"
-      subtitle="Aug 17 – 23 · 6 study blocks planned"
+      subtitle={`Aug 17 – 23 · ${suggestedCount} suggestion${suggestedCount === 1 ? "" : "s"} pending`}
       action={
         <Button size="sm" variant="secondary" className="rounded-full">
           <RefreshCw className="size-3.5" /> Re-plan
@@ -101,7 +109,27 @@ function CalendarPage() {
             </button>
           ))}
         </div>
+        <Button
+          size="sm"
+          variant={modify ? "default" : "secondary"}
+          className="rounded-full"
+          onClick={() => setModify((m) => !m)}
+        >
+          <Move className="size-3.5" /> {modify ? "Done" : "Modify"}
+        </Button>
+        {suggestedCount > 0 ? (
+          <Button size="sm" variant="secondary" className="rounded-full" onClick={approveAll}>
+            <CheckCheck className="size-3.5" /> Approve all
+          </Button>
+        ) : null}
       </div>
+
+      {modify ? (
+        <p className="mb-3 rounded-xl bg-surface px-3 py-2 text-xs text-muted-foreground">
+          Drag any block to a new time slot. Tap “Done” when the schedule looks right.
+        </p>
+      ) : null}
+
 
       {view === "day" ? (
         <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1">
