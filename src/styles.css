@@ -200,3 +200,12 @@
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-soft);
 }
+
+@keyframes jiggle {
+  0%, 100% { transform: rotate(-0.7deg); }
+  50% { transform: rotate(0.7deg); }
+}
+
+@utility jiggling {
+  animation: jiggle 0.28s ease-in-out infinite;
+}
