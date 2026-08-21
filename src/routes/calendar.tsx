@@ -219,10 +219,14 @@ function CalendarPage() {
                     <EventBubble
                       key={e.id}
                       event={e}
+                      modify={modify}
+                      dayOptions={visibleDays}
                       onApprove={() => approve(e.id)}
                       onDelete={() => remove(e.id)}
+                      onUpdate={(next) => update(e.id, next)}
                     />
                   ))}
+
               </div>
             ))}
           </div>
