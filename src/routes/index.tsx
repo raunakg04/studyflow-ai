@@ -147,9 +147,11 @@ function Landing() {
           <Button asChild size="lg" variant="outline" className="rounded-full px-6">
             <Link to="/calendar">See a sample week</Link>
           </Button>
-          <Button asChild size="lg" variant="ghost" className="rounded-full px-6">
-            <Link to="/auth">Sign in</Link>
-          </Button>
+          {!signedIn ? (
+            <Button asChild size="lg" variant="ghost" className="rounded-full px-6">
+              <Link to="/auth">Sign in</Link>
+            </Button>
+          ) : null}
         </div>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-3">
