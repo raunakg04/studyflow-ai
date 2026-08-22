@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_events: {
+        Row: {
+          course: string
+          created_at: string
+          day: number
+          end_hour: number
+          id: string
+          kind: string
+          rationale: string
+          start_hour: number
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          course?: string
+          created_at?: string
+          day?: number
+          end_hour?: number
+          id?: string
+          kind?: string
+          rationale?: string
+          start_hour?: number
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          course?: string
+          created_at?: string
+          day?: number
+          end_hour?: number
+          id?: string
+          kind?: string
+          rationale?: string
+          start_hour?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           availability: Json
@@ -56,6 +98,60 @@ export type Database = {
           rhythm?: string
           school?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          bucket: string
+          course: string
+          created_at: string
+          description: string
+          due: string | null
+          due_label: string
+          effort_hours: number
+          id: string
+          source: string
+          status: string
+          subtasks: Json
+          suggestions: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bucket?: string
+          course?: string
+          created_at?: string
+          description?: string
+          due?: string | null
+          due_label?: string
+          effort_hours?: number
+          id?: string
+          source?: string
+          status?: string
+          subtasks?: Json
+          suggestions?: Json
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          course?: string
+          created_at?: string
+          description?: string
+          due?: string | null
+          due_label?: string
+          effort_hours?: number
+          id?: string
+          source?: string
+          status?: string
+          subtasks?: Json
+          suggestions?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
