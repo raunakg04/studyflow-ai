@@ -103,7 +103,13 @@ function Onboarding() {
             >
               <ArrowLeft className="size-4" /> Back
             </Button>
-          ) : null}
+          ) : (
+            <Button asChild variant="ghost" className="rounded-full">
+              <Link to="/">
+                <ArrowLeft className="size-4" /> Back
+              </Link>
+            </Button>
+          )}
           <Button className="ml-auto rounded-full px-6" size="lg" onClick={next}>
             {last ? "Generate my schedule" : "Continue"} <ArrowRight className="size-4" />
           </Button>

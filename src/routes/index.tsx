@@ -3,6 +3,7 @@ import { ArrowRight, CalendarDays, CheckCircle2, Clock, Sparkles } from "lucide-
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/lib/profile-store";
+import { useAuth } from "@/lib/use-auth";
 import { courses, events, formatHour, tasks } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
@@ -122,6 +123,7 @@ function StatCard({
 }
 
 function Landing() {
+  const { signedIn } = useAuth();
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
@@ -145,9 +147,11 @@ function Landing() {
           <Button asChild size="lg" variant="outline" className="rounded-full px-6">
             <Link to="/calendar">See a sample week</Link>
           </Button>
-          <Button asChild size="lg" variant="ghost" className="rounded-full px-6">
-            <Link to="/auth">Sign in</Link>
-          </Button>
+          {!signedIn ? (
+            <Button asChild size="lg" variant="ghost" className="rounded-full px-6">
+              <Link to="/auth">Sign in</Link>
+            </Button>
+          ) : null}
         </div>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-3">
