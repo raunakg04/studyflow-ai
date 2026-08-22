@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, CheckCircle2, Clock, Sparkles } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight, CalendarDays, CheckCircle2, Clock, LogOut, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/lib/profile-store";
-import { useAuth } from "@/lib/use-auth";
+import { useAuth, displayName } from "@/lib/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { courses, events, formatHour, tasks } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
@@ -123,10 +124,57 @@ function StatCard({
 }
 
 function Landing() {
-  const { signedIn } = useAuth();
+  const { signedIn, user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/", replace: true });
+  }
+
+  const name = displayName(user);
+  const initial = name.slice(0, 1).toUpperCase();
+
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-4">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <Sparkles className="size-4" />
+            </span>
+            <span className="font-display text-lg font-semibold">StudyFlow</span>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            {!loading && signedIn ? (
+              <>
+                <span
+                  className="flex size-8 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground"
+                  aria-label="Profile"
+                  title={name}
+                >
+                  {initial || "S"}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full px-4"
+                  onClick={() => void handleSignOut()}
+                >
+                  <LogOut className="mr-2 size-4" /> Sign out
+                </Button>
+              </>
+            ) : !loading ? (
+              <Button asChild size="sm" className="rounded-full px-4">
+                <Link to="/auth">Sign in</Link>
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl flex-col justify-center px-6 py-16">
         <span className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
           <Sparkles className="size-5" />
         </span>
@@ -147,11 +195,6 @@ function Landing() {
           <Button asChild size="lg" variant="outline" className="rounded-full px-6">
             <Link to="/calendar">See a sample week</Link>
           </Button>
-          {!signedIn ? (
-            <Button asChild size="lg" variant="ghost" className="rounded-full px-6">
-              <Link to="/auth">Sign in</Link>
-            </Button>
-          ) : null}
         </div>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-3">
