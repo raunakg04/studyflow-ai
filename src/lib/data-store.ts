@@ -263,5 +263,5 @@ export function useCalendarEvents() {
     if (idRef.current) void supabase.from("calendar_events").delete().eq("id", id);
   }, []);
 
-  return { events, loading, addEvent, updateEvent, updateMany, removeEvent };
+  return { events, loading, addEvent, updateEvent, setKindMany, removeEvent };
 }
