@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          availability: Json
+          break_minutes: number
+          commitments: Json
+          completed: boolean
+          connected: Json
+          created_at: string
+          focus_minutes: number
+          id: string
+          name: string
+          rhythm: string
+          school: string
+          updated_at: string
+        }
+        Insert: {
+          availability?: Json
+          break_minutes?: number
+          commitments?: Json
+          completed?: boolean
+          connected?: Json
+          created_at?: string
+          focus_minutes?: number
+          id: string
+          name?: string
+          rhythm?: string
+          school?: string
+          updated_at?: string
+        }
+        Update: {
+          availability?: Json
+          break_minutes?: number
+          commitments?: Json
+          completed?: boolean
+          connected?: Json
+          created_at?: string
+          focus_minutes?: number
+          id?: string
+          name?: string
+          rhythm?: string
+          school?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

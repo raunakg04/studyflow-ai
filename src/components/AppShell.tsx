@@ -1,8 +1,74 @@
 import { useState, type ReactNode } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { CalendarDays, ListChecks, Settings, Sparkles, Sun } from "lucide-react";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { CalendarDays, ListChecks, LogOut, Settings, Sparkles, Sun } from "lucide-react";
 import { AssistantPanel } from "./AssistantPanel";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth, displayName } from "@/lib/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+function AccountButton() {
+  const { user, signedIn, loading } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  if (loading) return null;
+
+  if (!signedIn) {
+    return (
+      <Link
+        to="/auth"
+        className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-soft transition-opacity hover:opacity-90"
+      >
+        Sign in
+      </Link>
+    );
+  }
+
+  const name = displayName(user);
+  const initial = name.slice(0, 1).toUpperCase();
+
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label="Account menu"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground"
+        >
+          {initial || "S"}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 rounded-2xl">
+        <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
+          {name}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/settings">Settings</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void handleSignOut()}>
+          <LogOut className="mr-2 size-4" />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 const nav = [
   { to: "/", label: "Today", icon: Sun },
@@ -76,6 +142,7 @@ export function AppShell({
               ) : null}
             </div>
             {action}
+            <AccountButton />
             <button
               onClick={() => setAssistantOpen(true)}
               aria-label="Open planner assistant"
