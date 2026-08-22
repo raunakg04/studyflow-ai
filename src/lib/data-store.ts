@@ -250,22 +250,13 @@ export function useCalendarEvents() {
     });
   }, []);
 
-  const updateMany = useCallback(
-    (ids: string[], patch: Partial<CalendarEvent>) => {
-      setEvents((prev) => {
-        const next = prev.map((e) => (ids.includes(e.id) ? { ...e, ...patch } : e));
-        const uid = idRef.current;
-        if (uid && ids.length) {
-          void supabase
-            .from("calendar_events")
-            .update({ kind: patch.kind, title: patch.title } as Record<string, unknown>)
-            .in("id", ids);
-        }
-        return next;
-      });
-    },
-    [],
-  );
+  const setKindMany = useCallback((ids: string[], kind: CalendarEvent["kind"]) => {
+    setEvents((prev) => prev.map((e) => (ids.includes(e.id) ? { ...e, kind } : e)));
+    if (idRef.current && ids.length) {
+      void supabase.from("calendar_events").update({ kind }).in("id", ids);
+    }
+  }, []);
+
 
   const removeEvent = useCallback((id: string) => {
     setEvents((prev) => prev.filter((e) => e.id !== id));
