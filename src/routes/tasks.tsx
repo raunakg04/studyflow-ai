@@ -52,7 +52,7 @@ const buckets = [
 ] as const;
 
 function TasksPage() {
-  const [items, setItems] = useState<Task[]>(seedTasks);
+  const { tasks: items, addTask, updateTask } = useTasks();
   const [query, setQuery] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -70,17 +70,18 @@ function TasksPage() {
   );
 
   function toggleDone(id: string) {
-    setItems((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: t.status === "done" ? "todo" : "done" } : t)),
-    );
+    const task = items.find((t) => t.id === id);
+    if (!task) return;
+    updateTask(id, { status: task.status === "done" ? "todo" : "done" });
   }
 
   return (
     <AppShell
       title="Tasks"
       subtitle={`${filtered.length} open across ${new Set(filtered.map((t) => t.course)).size} courses`}
-      action={<AddTaskSheet />}
+      action={<AddTaskSheet onCreate={addTask} />}
     >
+
       <div className="space-y-3">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
