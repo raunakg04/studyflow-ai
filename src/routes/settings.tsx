@@ -1,5 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Plug } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/use-auth";
+import { Check, LogOut, Plug } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -140,7 +143,40 @@ function SettingsPage() {
             })}
           </div>
         </section>
+
+        <AccountSection />
       </div>
     </AppShell>
+  );
+}
+
+function AccountSection() {
+  const { signedIn, user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  if (!signedIn) return null;
+
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
+  return (
+    <section className="rounded-3xl bg-card p-5 shadow-soft">
+      <h2 className="font-display text-lg font-semibold">Account</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Signed in as {user?.email ?? "your account"}.
+      </p>
+      <Button
+        variant="outline"
+        className="mt-4 rounded-xl"
+        onClick={() => void handleSignOut()}
+      >
+        <LogOut className="size-4" /> Sign out
+      </Button>
+    </section>
   );
 }
