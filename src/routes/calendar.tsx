@@ -16,12 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   courses,
-  events as seedEvents,
   formatHour,
   weekDays,
   type CalendarEvent,
 } from "@/lib/mock-data";
+import { useCalendarEvents } from "@/lib/data-store";
 import { cn } from "@/lib/utils";
+
 
 
 export const Route = createFileRoute("/calendar")({
