@@ -3,6 +3,7 @@ import { ArrowRight, CalendarDays, CheckCircle2, Clock, Sparkles } from "lucide-
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/lib/profile-store";
+import { useAuth } from "@/lib/use-auth";
 import { courses, events, formatHour, tasks } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
