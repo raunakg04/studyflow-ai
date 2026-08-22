@@ -16,12 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   courses,
-  events as seedEvents,
   formatHour,
   weekDays,
   type CalendarEvent,
 } from "@/lib/mock-data";
+import { useCalendarEvents } from "@/lib/data-store";
 import { cn } from "@/lib/utils";
+
 
 
 export const Route = createFileRoute("/calendar")({
@@ -48,7 +49,7 @@ const DAY_END = 22;
 const HOUR_PX = 56;
 
 function CalendarPage() {
-  const [events, setEvents] = useState<CalendarEvent[]>(seedEvents);
+  const { events, updateEvent, setKindMany, removeEvent } = useCalendarEvents();
   const [view, setView] = useState<"week" | "day">("week");
   const [activeDay, setActiveDay] = useState(3);
   const [modify, setModify] = useState(false);
@@ -57,17 +58,21 @@ function CalendarPage() {
   const suggestedCount = events.filter((e) => e.kind === "suggested").length;
 
   function approve(id: string) {
-    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, kind: "study" } : e)));
+    updateEvent(id, { kind: "study" });
   }
   function approveAll() {
-    setEvents((prev) => prev.map((e) => (e.kind === "suggested" ? { ...e, kind: "study" } : e)));
+    setKindMany(
+      events.filter((e) => e.kind === "suggested").map((e) => e.id),
+      "study",
+    );
   }
   function remove(id: string) {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
+    removeEvent(id);
   }
   function update(id: string, next: Partial<CalendarEvent>) {
-    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, ...next } : e)));
+    updateEvent(id, next);
   }
+
 
   return (
     <AppShell

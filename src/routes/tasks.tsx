@@ -21,8 +21,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { courses, tasks as seedTasks, type Task } from "@/lib/mock-data";
+import { courses, type CourseId, type Task } from "@/lib/mock-data";
+import { useTasks } from "@/lib/data-store";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/tasks")({
   head: () => ({
@@ -50,7 +52,7 @@ const buckets = [
 ] as const;
 
 function TasksPage() {
-  const [items, setItems] = useState<Task[]>(seedTasks);
+  const { tasks: items, addTask, updateTask } = useTasks();
   const [query, setQuery] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -68,17 +70,18 @@ function TasksPage() {
   );
 
   function toggleDone(id: string) {
-    setItems((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: t.status === "done" ? "todo" : "done" } : t)),
-    );
+    const task = items.find((t) => t.id === id);
+    if (!task) return;
+    updateTask(id, { status: task.status === "done" ? "todo" : "done" });
   }
 
   return (
     <AppShell
       title="Tasks"
       subtitle={`${filtered.length} open across ${new Set(filtered.map((t) => t.course)).size} courses`}
-      action={<AddTaskSheet />}
+      action={<AddTaskSheet onCreate={addTask} />}
     >
+
       <div className="space-y-3">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -285,8 +288,47 @@ function TaskDetail({
   );
 }
 
-function AddTaskSheet() {
+function AddTaskSheet({ onCreate }: { onCreate: (task: Omit<Task, "id">) => Task }) {
   const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [course, setCourse] = useState<CourseId>("life");
+  const [due, setDue] = useState("");
+  const [effort, setEffort] = useState("");
+  const [notes, setNotes] = useState("");
+
+  function bucketFor(date: string): Task["bucket"] {
+    if (!date) return "later";
+    const days = Math.ceil((new Date(date).getTime() - Date.now()) / 86_400_000);
+    if (days <= 1) return "today";
+    if (days <= 7) return "week";
+    return "later";
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    onCreate({
+      title: title.trim(),
+      course,
+      due,
+      dueLabel: due
+        ? `Due ${new Date(due).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+        : "No deadline",
+      bucket: bucketFor(due),
+      effortHours: effort ? Number(effort) : 1,
+      status: "todo",
+      source: "manual",
+      description: notes.trim(),
+      subtasks: [],
+      suggestions: [],
+    });
+    setTitle("");
+    setDue("");
+    setEffort("");
+    setNotes("");
+    setOpen(false);
+  }
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
@@ -298,20 +340,20 @@ function AddTaskSheet() {
         <SheetHeader>
           <SheetTitle>New task</SheetTitle>
         </SheetHeader>
-        <form
-          className="space-y-4 p-4 pt-0"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setOpen(false);
-          }}
-        >
+        <form className="space-y-4 p-4 pt-0" onSubmit={submit}>
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" placeholder="Essay draft, problem set…" className="rounded-xl" />
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Essay draft, problem set…"
+              className="rounded-xl"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="course">Course</Label>
-            <Select>
+            <Select value={course} onValueChange={(v) => setCourse(v as CourseId)}>
               <SelectTrigger id="course" className="rounded-xl">
                 <SelectValue placeholder="Pick a course" />
               </SelectTrigger>
@@ -329,7 +371,13 @@ function AddTaskSheet() {
               <Label htmlFor="due">
                 Due <span className="text-muted-foreground">(optional)</span>
               </Label>
-              <Input id="due" type="date" className="rounded-xl" />
+              <Input
+                id="due"
+                type="date"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                className="rounded-xl"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="effort">
@@ -340,6 +388,8 @@ function AddTaskSheet() {
                 type="number"
                 min={0.25}
                 step={0.25}
+                value={effort}
+                onChange={(e) => setEffort(e.target.value)}
                 placeholder="hrs"
                 className="rounded-xl"
               />
@@ -351,7 +401,14 @@ function AddTaskSheet() {
           </p>
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" rows={4} className="rounded-xl" placeholder="Anything the planner should know" />
+            <Textarea
+              id="notes"
+              rows={4}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="rounded-xl"
+              placeholder="Anything the planner should know"
+            />
           </div>
           <Button type="submit" className="w-full rounded-full">
             Add task & schedule it
@@ -360,4 +417,5 @@ function AddTaskSheet() {
       </SheetContent>
     </Sheet>
   );
+
 }
