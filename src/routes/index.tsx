@@ -123,6 +123,7 @@ function StatCard({
 }
 
 function Landing() {
+  const { signedIn } = useAuth();
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
