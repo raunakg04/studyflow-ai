@@ -142,6 +142,7 @@ export function AppShell({
               ) : null}
             </div>
             {action}
+            <AccountButton />
             <button
               onClick={() => setAssistantOpen(true)}
               aria-label="Open planner assistant"
