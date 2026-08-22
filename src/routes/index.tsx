@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, CheckCircle2, Clock, LogOut, Sparkles, Sun } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCircle2, Clock, LogOut, Sparkles } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { useProfile } from "@/lib/profile-store";
