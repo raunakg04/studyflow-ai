@@ -21,8 +21,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { courses, tasks as seedTasks, type Task } from "@/lib/mock-data";
+import { courses, type CourseId, type Task } from "@/lib/mock-data";
+import { useTasks } from "@/lib/data-store";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/tasks")({
   head: () => ({
