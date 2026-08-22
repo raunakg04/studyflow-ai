@@ -5,6 +5,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/use-auth";
+import {
+  markPendingSignInRedirect,
+  resolveSignInTarget,
+} from "@/lib/post-signin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,21 +56,29 @@ function GoogleMark() {
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { signedIn, loading } = useAuth();
+  const { signedIn, loading, user } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState<"google" | "email" | null>(null);
   const [sentConfirmation, setSentConfirmation] = useState(false);
 
+  const userId = user?.id ?? null;
+
   useEffect(() => {
-    if (!loading && signedIn) {
-      navigate({ to: "/", replace: true });
-    }
-  }, [loading, signedIn, navigate]);
+    if (loading || !signedIn || !userId) return;
+    let active = true;
+    void resolveSignInTarget(userId).then((to) => {
+      if (active) navigate({ to, replace: true });
+    });
+    return () => {
+      active = false;
+    };
+  }, [loading, signedIn, userId, navigate]);
 
   async function handleGoogle() {
     setBusy("google");
+    markPendingSignInRedirect();
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
@@ -76,7 +88,6 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/", replace: true });
   }
 
   async function handleEmail(e: React.FormEvent) {
@@ -97,7 +108,6 @@ function AuthPage() {
         setSentConfirmation(true);
         return;
       }
-      navigate({ to: "/", replace: true });
       return;
     }
 
@@ -105,9 +115,7 @@ function AuthPage() {
     setBusy(null);
     if (error) {
       toast.error("Could not sign in", { description: error.message });
-      return;
     }
-    navigate({ to: "/", replace: true });
   }
 
   return (
