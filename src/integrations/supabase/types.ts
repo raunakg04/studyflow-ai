@@ -16,41 +16,98 @@ export type Database = {
     Tables: {
       calendar_events: {
         Row: {
+          all_day: boolean
           course: string
           created_at: string
           day: number
           end_hour: number
+          ends_at: string | null
+          external_id: string | null
           id: string
           kind: string
+          location: string
           rationale: string
+          source: string
           start_hour: number
+          starts_at: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          all_day?: boolean
           course?: string
           created_at?: string
           day?: number
           end_hour?: number
+          ends_at?: string | null
+          external_id?: string | null
           id?: string
           kind?: string
+          location?: string
           rationale?: string
+          source?: string
           start_hour?: number
+          starts_at?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          all_day?: boolean
           course?: string
           created_at?: string
           day?: number
           end_hour?: number
+          ends_at?: string | null
+          external_id?: string | null
           id?: string
           kind?: string
+          location?: string
           rationale?: string
+          source?: string
           start_hour?: number
+          starts_at?: string | null
           title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      integrations: {
+        Row: {
+          account_label: string
+          created_at: string
+          id: string
+          last_sync_error: string | null
+          last_synced_at: string | null
+          provider: string
+          settings: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_label?: string
+          created_at?: string
+          id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          provider: string
+          settings?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_label?: string
+          created_at?: string
+          id?: string
+          last_sync_error?: string | null
+          last_synced_at?: string | null
+          provider?: string
+          settings?: Json
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -69,6 +126,7 @@ export type Database = {
           name: string
           rhythm: string
           school: string
+          timezone: string
           updated_at: string
         }
         Insert: {
@@ -83,6 +141,7 @@ export type Database = {
           name?: string
           rhythm?: string
           school?: string
+          timezone?: string
           updated_at?: string
         }
         Update: {
@@ -97,7 +156,118 @@ export type Database = {
           name?: string
           rhythm?: string
           school?: string
+          timezone?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      schedule_blocks: {
+        Row: {
+          actual_minutes: number | null
+          completed_at: string | null
+          course: string
+          created_at: string
+          ends_at: string
+          id: string
+          origin: string
+          rationale: string
+          starts_at: string
+          status: string
+          task_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          user_modified: boolean
+        }
+        Insert: {
+          actual_minutes?: number | null
+          completed_at?: string | null
+          course?: string
+          created_at?: string
+          ends_at: string
+          id?: string
+          origin?: string
+          rationale?: string
+          starts_at: string
+          status?: string
+          task_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          user_modified?: boolean
+        }
+        Update: {
+          actual_minutes?: number | null
+          completed_at?: string | null
+          course?: string
+          created_at?: string
+          ends_at?: string
+          id?: string
+          origin?: string
+          rationale?: string
+          starts_at?: string
+          status?: string
+          task_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          user_modified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_blocks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduling_preferences: {
+        Row: {
+          allow_weekends: boolean
+          available_days: number[]
+          break_minutes: number
+          buffer_minutes: number
+          created_at: string
+          focus_minutes: number
+          id: string
+          max_daily_study_minutes: number
+          planning_horizon_days: number
+          study_window_end: string
+          study_window_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allow_weekends?: boolean
+          available_days?: number[]
+          break_minutes?: number
+          buffer_minutes?: number
+          created_at?: string
+          focus_minutes?: number
+          id?: string
+          max_daily_study_minutes?: number
+          planning_horizon_days?: number
+          study_window_end?: string
+          study_window_start?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allow_weekends?: boolean
+          available_days?: number[]
+          break_minutes?: number
+          buffer_minutes?: number
+          created_at?: string
+          focus_minutes?: number
+          id?: string
+          max_daily_study_minutes?: number
+          planning_horizon_days?: number
+          study_window_end?: string
+          study_window_start?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -108,9 +278,13 @@ export type Database = {
           created_at: string
           description: string
           due: string | null
+          due_at: string | null
           due_label: string
           effort_hours: number
+          estimated_minutes: number | null
+          external_id: string | null
           id: string
+          priority: number
           source: string
           status: string
           subtasks: Json
@@ -125,9 +299,13 @@ export type Database = {
           created_at?: string
           description?: string
           due?: string | null
+          due_at?: string | null
           due_label?: string
           effort_hours?: number
+          estimated_minutes?: number | null
+          external_id?: string | null
           id?: string
+          priority?: number
           source?: string
           status?: string
           subtasks?: Json
@@ -142,9 +320,13 @@ export type Database = {
           created_at?: string
           description?: string
           due?: string | null
+          due_at?: string | null
           due_label?: string
           effort_hours?: number
+          estimated_minutes?: number | null
+          external_id?: string | null
           id?: string
+          priority?: number
           source?: string
           status?: string
           subtasks?: Json
