@@ -1,47 +1,42 @@
-# Migrate StudyFlow to your own Supabase account + your own hosting
+# Finish the standalone setup: GitHub → Vercel on your own Supabase
 
-Goal: run StudyFlow outside Lovable, against a Supabase project in your own account (your data, your billing). Schema is recreated fresh; no data is copied.
+Status: GitHub repo linked, your Supabase account exists (empty — schema not applied yet). The workflow you described works: I make changes in Lovable → they sync to GitHub → Vercel redeploys automatically. You keep building in Lovable.
 
-Important: Lovable Cloud cannot be detached from this project inside Lovable. The migration path is to export the code and point that exported copy at your own Supabase project. This project in Lovable keeps using Cloud.
+Two things still stand between the current repo and a working live app on your own Supabase:
 
-## Steps
+## What I do in the code (this project)
 
-1. Export the code
-   - Connect GitHub from the Lovable sidebar and push this project to a repo you own, then clone it locally.
+1. **Dual-mode Google sign-in in `src/routes/auth.tsx`**
+   - Today it only uses Lovable's OAuth broker, which doesn't exist outside Lovable, so Google sign-in would break on your Vercel deployment.
+   - I'll make it detect the environment: use the Lovable broker inside the Lovable preview (so this project keeps working), and use native `supabase.auth.signInWithOAuth({ provider: "google", redirectTo: window.location.origin })` everywhere else (your Vercel deployment).
+   - The Supabase client already reads `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` from the environment and already falls back to plain localStorage outside the Lovable editor, so no other client changes are needed — Vercel's env vars decide which database the deployed app talks to.
 
-2. Create your Supabase project
-   - Create a project in your own Supabase account, note its URL, publishable/anon key, and service role key.
+2. **Keep `supabase/migrations/` as the schema source of truth**
+   - From now on, whenever you ask for a schema change, I'll apply it to Lovable Cloud (for this preview) AND write the matching migration file into the repo, so `supabase db push` keeps your Supabase in sync.
 
-3. Recreate the schema
-   - The repo already contains 4 SQL migration files under `supabase/migrations/`. Apply them in filename order via the Supabase SQL editor or the Supabase CLI (`supabase link` + `supabase db push`).
-   - This recreates: `profiles`, `scheduling_preferences`, `tasks`, `calendar_events`, `schedule_blocks`, `integrations`, the `handle_new_user` / `set_updated_at` functions and triggers, all row-level-security policies, and grants.
+## What only you can do (your accounts)
 
-4. Configure auth
-   - Enable Email provider.
-   - Enable Google provider with your own Google Cloud OAuth client (client ID + secret), and add your Supabase callback URL as an authorized redirect URI.
-   - Set Site URL and Redirect URLs to your deployed domain plus `http://localhost:8080` for local dev.
+3. **Apply the schema to your Supabase project** (currently empty — this is why you see no tables)
+   - `bunx supabase link --project-ref <ref>` then `bunx supabase db push`, or paste `supabase/schema.sql` into the SQL editor once.
+   - Verify RLS with the check queries in `docs/standalone-migration.md` (every table: `rowsecurity = true`, policy count > 0).
 
-5. Swap out the two Lovable-managed pieces in the code
-   - `src/routes/auth.tsx` currently signs in with Google via the Lovable OAuth broker (`lovable.auth.signInWithOAuth`). Replace with `supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } })`.
-   - `src/integrations/supabase/client.ts` contains Lovable preview session brokering (postMessage across preview iframes). Replace with a plain `createClient` using `localStorage`.
-   - `src/lib/lovable-error-reporting.ts` hooks are inert outside Lovable; can stay or be stripped.
+4. **Configure Supabase Auth**
+   - Enable Email provider; enable Google with your own Google Cloud OAuth client ID + secret.
+   - In Google Cloud Console: authorized redirect URI = `https://<your-ref>.supabase.co/auth/v1/callback` (exactly one).
+   - In Supabase URL Configuration: Site URL = your Vercel domain; additional redirect URLs = your domain and `http://localhost:8080/**`.
 
-6. Environment variables
-   - Local `.env` and your host's env settings need: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` (server-side only, used by `src/integrations/supabase/client.server.ts`).
+5. **Set Vercel environment variables** (Production and Preview)
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (mark sensitive; never VITE_-prefixed).
 
-7. Deploy
-   - The app is TanStack Start on Vite, targeting an edge runtime. Cloudflare Workers or Vercel both work; build with `bun run build` and deploy the server output. Add the env vars from step 6 to the host, then update Supabase Site URL / Redirect URLs to the live domain.
+6. **Verify on the live deployment before onboarding anyone** — the acceptance checklist in `docs/standalone-migration.md` section 8: email sign-up, Google OAuth, onboarding vs calendar routing, task/block persistence, RLS isolation between two accounts, no `sb_secret` in the client bundle.
 
-8. Verify
-   - Sign up with email, confirm a `profiles` row is auto-created, run Google sign-in, create a task and a calendar block, then sign out and back in to confirm data persists under your account.
+## What stays untouched
 
-## What I can do here vs. what only you can do
+- This Lovable project and its Cloud database keep working as your development environment. Nothing is modified or deleted there.
+- After cutover, the Lovable Cloud database and your Supabase project are two separate databases; the Lovable preview keeps using Cloud, the Vercel deployment uses yours.
 
-I can do inside this project (if you want): prepare the code changes from step 5 behind env-var detection so the exported copy works standalone, and produce a single consolidated `schema.sql` you can paste into your Supabase SQL editor.
+## Technical details
 
-Only you can do: create the Supabase project, create the Google OAuth client, hold the keys, and deploy to your host — Lovable has no access to your external account.
-
-## Notes
-
-- No data or auth users are copied, per your choice; everyone signs up again on the new project.
-- After the switch, this Lovable project and your external project are two separate databases; changes in one do not appear in the other.
+- Dual-mode detection: check whether the Lovable editor/broker is present (e.g. running on a `*.lovable.app` preview host or the editor iframe); fall back to native OAuth otherwise. Preview behavior unchanged.
+- No new dependencies. `client.ts` and `client.server.ts` (auto-generated) are not modified.
+- Full step-by-step runbook with exact URLs and SQL already lives in `docs/standalone-migration.md`.
