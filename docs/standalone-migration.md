@@ -146,12 +146,15 @@ strings rather than JWTs.
 
 ## 7. Deploy to Vercel
 
-1. Import the GitHub repo in Vercel. It is a TanStack Start (Vite) app; Vercel detects the
-   preset — build `bun run build`, no output-dir override needed.
-2. Environment variables (Production **and** Preview), from `.env.example`:
-   `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`,
-   `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
-   Mark the service-role key as sensitive; never add a `VITE_`-prefixed copy of it.
+1. Import the GitHub repo in Vercel. It is a TanStack Start (Vite) app and
+   `vite.config.ts` explicitly selects Nitro's `vercel` preset. Use `bun run build`; no
+   output-directory override is needed.
+2. Required environment variables (Production **and** Preview), from `.env.example`:
+   `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, and
+   `SUPABASE_PUBLISHABLE_KEY`.
+   `SUPABASE_SERVICE_ROLE_KEY` is only needed if a future trusted server operation imports
+   the admin client; the current app does not use it. Keep it server-only if configured and
+   never add a `VITE_`-prefixed copy.
 3. Deploy, then go back and put the real deployment domain into Supabase's Site URL / redirect
    URLs and Google's authorized origins (step 4).
 
