@@ -102,29 +102,19 @@ In Supabase → Authentication → URL Configuration (this is a *separate* list 
 Google's redirect URI points at Supabase; Supabase's allowed redirect URLs point back at your
 app. Keeping them separate is what lets one Google client serve both localhost and production.
 
-## 5. Code change required outside Lovable
+## 5. No code change needed — the app is dual-mode
 
-`src/routes/auth.tsx` signs in with Google through Lovable's managed OAuth broker
-(`lovable.auth.signInWithOAuth`). That broker only exists inside Lovable. In the standalone
-repo, replace `handleGoogle`'s body with the native Supabase call:
+`src/routes/auth.tsx` detects where it is running. On Lovable-hosted surfaces (the editor
+preview and published `*.lovable.app` sites) it signs in with Google through Lovable's managed
+OAuth broker; everywhere else — your Vercel deployment, local dev of the exported repo — it
+uses the native `supabase.auth.signInWithOAuth` flow against whichever project your env vars
+point at. Both paths land on the same session and post-sign-in routing, so no edits are needed
+when deploying standalone.
 
-```ts
-markPendingSignInRedirect();
-const { error } = await supabase.auth.signInWithOAuth({
-  provider: "google",
-  options: { redirectTo: window.location.origin },
-});
-if (error) {
-  setBusy(null);
-  toast.error("Google sign-in failed", { description: error.message });
-}
-```
-
-and drop the `@/integrations/lovable` import. Nothing else in the app depends on Lovable:
-`src/lib/lovable-error-reporting.ts` no-ops when the editor hooks are absent, and the preview
-session brokering in `src/integrations/supabase/client.ts` falls back to `localStorage`
-automatically when the app is not framed by the Lovable editor — so it works as a plain client
-without edits.
+Nothing else in the app depends on Lovable: `src/lib/lovable-error-reporting.ts` no-ops when
+the editor hooks are absent, and the preview session brokering in
+`src/integrations/supabase/client.ts` falls back to `localStorage` automatically when the app
+is not framed by the Lovable editor — so it works as a plain client without edits.
 
 ## 6. Supabase client audit — why each client gets the credentials it gets
 
