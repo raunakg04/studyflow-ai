@@ -34,6 +34,25 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+// Lovable's managed OAuth broker only exists on Lovable-hosted surfaces
+// (editor preview, published *.lovable.app). Anywhere else — a standalone
+// deployment such as Vercel, or local dev of the exported repo — sign in
+// through Supabase's native OAuth flow instead. Both paths set the session
+// on the same client, so the rest of the app is identical.
+const LOVABLE_HOSTS = [
+  "lovable.app",
+  "lovableproject.com",
+  "lovableproject-dev.com",
+  "gpt-eng.com",
+  "gptengineer.run",
+];
+
+function isLovableEnvironment() {
+  if (typeof window === "undefined") return true;
+  const host = window.location.hostname;
+  return LOVABLE_HOSTS.some((zone) => host === zone || host.endsWith(`.${zone}`));
+}
+
 function GoogleMark() {
   return (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
