@@ -14,6 +14,9 @@ Two things still stand between the current repo and a working live app on your o
 2. **Keep `supabase/migrations/` as the schema source of truth**
    - From now on, whenever you ask for a schema change, I'll apply it to Lovable Cloud (for this preview) AND write the matching migration file into the repo, so `supabase db push` keeps your Supabase in sync.
 
+3. **Continuous GitHub sync (already active, no setup needed)**
+   - Lovable's two-way sync is on because the repo is linked: every change made here is auto-committed and pushed to GitHub, and Vercel redeploys on each push. Pushes made directly to GitHub (local IDE, PRs) sync back into this project. No manual push step is ever required.
+
 ## What only you can do (your accounts)
 
 3. **Apply the schema to your Supabase project** (currently empty — this is why you see no tables)
