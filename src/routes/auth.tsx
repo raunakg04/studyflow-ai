@@ -98,15 +98,31 @@ function AuthPage() {
   async function handleGoogle() {
     setBusy("google");
     markPendingSignInRedirect();
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      setBusy(null);
-      toast.error("Google sign-in failed", { description: result.error.message });
+
+    if (isLovableEnvironment()) {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        setBusy(null);
+        toast.error("Google sign-in failed", { description: result.error.message });
+        return;
+      }
+      if (result.redirected) return;
       return;
     }
-    if (result.redirected) return;
+
+    // Standalone deployment: native Supabase OAuth. On success the browser
+    // navigates away to Google and returns to the origin, where the pending
+    // redirect flag routes the user to onboarding or the calendar.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) {
+      setBusy(null);
+      toast.error("Google sign-in failed", { description: error.message });
+    }
   }
 
   async function handleEmail(e: React.FormEvent) {
