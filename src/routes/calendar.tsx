@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Check,
@@ -36,6 +36,7 @@ import {
   type CourseId,
 } from "@/lib/mock-data";
 import { useCalendarEvents } from "@/lib/data-store";
+import { useIntegrations } from "@/lib/integrations-store";
 import { cn } from "@/lib/utils";
 
 
@@ -66,6 +67,23 @@ const HOUR_PX = 56;
 function CalendarPage() {
   const { signedIn } = useAuth();
   const { events, addEvent, updateEvent, setKindMany, removeEvent } = useCalendarEvents();
+  const { google, canvas, googleSync, canvasSync } = useIntegrations();
+  const syncing = googleSync.isPending || canvasSync.isPending;
+
+  function syncConnected() {
+    if (google?.connected) googleSync.mutate();
+    if (canvas?.connected) canvasSync.mutate();
+  }
+
+  // Refresh imported events when the page opens and the last sync is stale.
+  const autoSynced = useRef(false);
+  useEffect(() => {
+    if (autoSynced.current || !google?.connected) return;
+    const last = google.lastSyncedAt ? new Date(google.lastSyncedAt).getTime() : 0;
+    if (Date.now() - last < 15 * 60 * 1000) return;
+    autoSynced.current = true;
+    googleSync.mutate();
+  }, [google?.connected, google?.lastSyncedAt, googleSync]);
   const [view, setView] = useState<"week" | "day">("week");
   const [activeDay, setActiveDay] = useState(3);
   const [modify, setModify] = useState(false);
@@ -98,9 +116,18 @@ function CalendarPage() {
         signedIn ? (
         <div className="flex items-center gap-2">
           <AddEventDialog onCreate={addEvent} />
-          <Button size="sm" variant="secondary" className="hidden rounded-full sm:inline-flex">
-            <RefreshCw className="size-3.5" /> Re-plan
-          </Button>
+          {google?.connected || canvas?.connected ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="rounded-full"
+              disabled={syncing}
+              onClick={syncConnected}
+            >
+              <RefreshCw className={cn("size-3.5", syncing && "animate-spin")} />
+              {syncing ? "Syncing" : "Sync"}
+            </Button>
+          ) : null}
         </div>
         ) : null
       }
@@ -447,6 +474,7 @@ function EventBubble({
 }) {
   const c = courses[event.course];
   const suggested = event.kind === "suggested";
+  const imported = event.source === "google";
   const top = (event.start - DAY_START) * HOUR_PX;
   const height = Math.max((event.end - event.start) * HOUR_PX - 4, 26);
   const ref = useRef<HTMLDivElement>(null);
@@ -455,7 +483,7 @@ function EventBubble({
   const [editing, setEditing] = useState(false);
 
   function onPointerDown(e: React.PointerEvent) {
-    if (!modify) return;
+    if (!modify || imported) return;
     e.preventDefault();
     drag.current = { x: e.clientX, y: e.clientY };
     setOffset({ x: 0, y: 0 });
@@ -500,8 +528,8 @@ function EventBubble({
       className={cn(
         "absolute inset-x-1 z-20 overflow-hidden rounded-[10px] px-2 py-1 text-left transition-transform hover:scale-[1.01] active:scale-100",
         suggested && "border-2 border-dashed",
-        modify && "cursor-grab touch-none shadow-soft",
-        modify && !offset && "jiggling",
+        modify && !imported && "cursor-grab touch-none shadow-soft",
+        modify && !imported && !offset && "jiggling",
         offset && "z-30 cursor-grabbing opacity-90",
       )}
       style={{
@@ -519,6 +547,9 @@ function EventBubble({
           {event.title}
         </span>
       </span>
+      {imported ? (
+        <span className="mt-0.5 block text-[10px] font-medium opacity-70">Google</span>
+      ) : null}
       {height > 52 ? (
         <span className="mt-0.5 block text-[10px] opacity-80">
           {formatHour(event.start)} – {formatHour(event.end)}
@@ -628,7 +659,12 @@ function EventBubble({
                 </p>
               </div>
             ) : null}
-            <div className="mt-3 flex flex-wrap gap-2">
+            {imported ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Synced from Google Calendar. Edit it in Google and sync again.
+              </p>
+            ) : null}
+            <div className={cn("mt-3 flex flex-wrap gap-2", imported && "hidden")}>
               {suggested ? (
                 <Button size="sm" className="h-8 rounded-full" onClick={onApprove}>
                   <Check className="size-3.5" /> Approve
