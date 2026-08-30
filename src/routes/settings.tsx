@@ -34,6 +34,40 @@ export const Route = createFileRoute("/settings")({
   component: SettingsPage,
 });
 
+const GOOGLE_RETURN_MESSAGES: Record<string, { ok: boolean; text: string }> = {
+  connected: { ok: true, text: "Google Calendar connected and synced." },
+  cancelled: { ok: false, text: "The Google connection was cancelled." },
+  expired: { ok: false, text: "That connection link expired — try again." },
+  no_refresh_token: {
+    ok: false,
+    text: "Google didn't return offline access. Remove Tempo in your Google account settings, then reconnect.",
+  },
+  error: { ok: false, text: "Couldn't finish connecting Google Calendar." },
+};
+
+/** Shows the outcome of the server-side Google OAuth redirect and refreshes status. */
+function useGoogleReturnNotice() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("google");
+    if (!status) return;
+    const message = GOOGLE_RETURN_MESSAGES[status] ?? GOOGLE_RETURN_MESSAGES["error"]!;
+    if (message.ok) {
+      toast.success(message.text);
+      void queryClient.invalidateQueries();
+      window.dispatchEvent(new CustomEvent("tempo:data-synced"));
+    } else {
+      toast.error(message.text);
+      void queryClient.invalidateQueries({ queryKey: ["integrations"] });
+    }
+    void navigate({ to: "/settings", replace: true });
+  }, [navigate, queryClient]);
+}
+
+
 function SettingsPage() {
   const { profile, update } = useProfile();
   useGoogleReturnNotice();
