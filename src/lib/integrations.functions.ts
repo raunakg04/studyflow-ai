@@ -149,32 +149,30 @@ export const disconnectGoogleCalendar = createServerFn({ method: "POST" })
 
 export const connectCanvas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { domain: string; token: string }) => {
-    const domain = String(input?.domain ?? "").trim();
-    const token = String(input?.token ?? "").trim();
-    if (!domain) throw new Error("Enter your school's Canvas address");
-    if (token.length < 20) throw new Error("Enter a valid Canvas access token");
-    return { domain, token };
+  .inputValidator((input: { feedUrl: string }) => {
+    const feedUrl = String(input?.feedUrl ?? "").trim();
+    if (!feedUrl) throw new Error("Paste your Canvas calendar feed link");
+    return { feedUrl };
   })
   .handler(async ({ data, context }) => {
-    const { normalizeCanvasDomain, canvasUserName, CANVAS_CONNECTOR_ID } = await import(
-      "@/lib/canvas.server"
-    );
+    const { normalizeCanvasFeedUrl, canvasFeedLabel, canvasFeedHost, CANVAS_CONNECTOR_ID } =
+      await import("@/lib/canvas.server");
     const { saveConnectionKeyForUser } = await import("@/lib/app-user-connections.server");
     const { writeStatus } = await import("@/lib/integration-status.server");
 
-    const domain = normalizeCanvasDomain(data.domain);
-    const name = await canvasUserName(domain, data.token);
+    const feedUrl = normalizeCanvasFeedUrl(data.feedUrl);
+    const name = await canvasFeedLabel(feedUrl);
 
-    await saveConnectionKeyForUser(context.userId, CANVAS_CONNECTOR_ID, data.token);
+    await saveConnectionKeyForUser(context.userId, CANVAS_CONNECTOR_ID, feedUrl);
     await writeStatus(context.supabase, context.userId, "canvas", {
       status: "connected",
       accountLabel: name,
       lastSyncError: null,
-      settings: { domain },
+      settings: { domain: canvasFeedHost(feedUrl) },
     });
     return { ok: true, accountLabel: name };
   });
+
 
 export const syncCanvas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
