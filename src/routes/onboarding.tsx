@@ -150,6 +150,7 @@ function StepBody({
   update: (p: Partial<Profile>) => void;
 }) {
   const [commitment, setCommitment] = useState("");
+  const { google, canvas } = useIntegrations();
 
   if (step === 0)
     return (
