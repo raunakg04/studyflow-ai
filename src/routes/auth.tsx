@@ -244,7 +244,7 @@ function AuthPage() {
       </div>
 
       <Link to="/" className="mt-6 text-sm text-muted-foreground hover:text-foreground">
-        Keep exploring without an account
+        Go to homepage
       </Link>
     </div>
   );
