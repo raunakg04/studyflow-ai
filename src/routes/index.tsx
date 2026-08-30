@@ -29,7 +29,11 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const { profile, hydrated } = useProfile();
+  const { signedIn, loading: authLoading } = useAuth();
 
+  // Signed-out visitors only ever see the marketing landing page.
+  if (authLoading) return null;
+  if (!signedIn) return <Landing />;
   if (hydrated && !profile.completed) return <Landing />;
 
   const today = events.filter((e) => e.day === 3).sort((a, b) => a.start - b.start);
@@ -192,9 +196,15 @@ function Landing() {
               Get started <ArrowRight className="size-4" />
             </Link>
           </Button>
-          <Button asChild size="lg" variant="outline" className="rounded-full px-6">
-            <Link to="/calendar">See a sample week</Link>
-          </Button>
+          {signedIn ? (
+            <Button asChild size="lg" variant="outline" className="rounded-full px-6">
+              <Link to="/calendar">Open my calendar</Link>
+            </Button>
+          ) : (
+            <Button asChild size="lg" variant="outline" className="rounded-full px-6">
+              <Link to="/auth">Sign in</Link>
+            </Button>
+          )}
         </div>
 
         <div className="mt-14 grid gap-4 sm:grid-cols-3">
