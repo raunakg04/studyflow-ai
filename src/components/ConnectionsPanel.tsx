@@ -57,6 +57,8 @@ export function ConnectionsPanel({ className }: { className?: string }) {
         }
         disabled={!googleConfigured}
         onConnect={() => googleConnect.mutate()}
+        onReconnect={() => googleConnect.mutate()}
+        reconnectLabel="Reconnect"
         onSync={() => googleSync.mutate()}
         onDisconnect={() => googleDisconnect.mutate()}
       />
@@ -69,6 +71,8 @@ export function ConnectionsPanel({ className }: { className?: string }) {
         loading={loading}
         error={errorText(canvasConnect.error ?? canvasSync.error) || canvas?.lastSyncError || ""}
         onConnect={() => setCanvasOpen(true)}
+        onReconnect={() => setCanvasOpen(true)}
+        reconnectLabel="Change link"
         onSync={() => canvasSync.mutate()}
         onDisconnect={() => canvasDisconnect.mutate()}
       />
@@ -83,6 +87,7 @@ export function ConnectionsPanel({ className }: { className?: string }) {
           canvasConnect.mutate(input, { onSuccess: () => setCanvasOpen(false) })
         }
       />
+
     </div>
   );
 }
