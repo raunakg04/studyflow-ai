@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  dateAtHour,
+  dateKeyForDay,
+  fromDateKey,
+  toDateKey,
+  weekdayIndex,
+} from "@/lib/dates";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -95,17 +102,22 @@ type EventRow = {
   rationale: string;
   notes: string | null;
   source: string | null;
+  starts_at: string | null;
 };
 
 const EVENT_COLUMNS =
-  "id, title, course, day, start_hour, end_hour, kind, rationale, notes, source";
+  "id, title, course, day, start_hour, end_hour, kind, rationale, notes, source, starts_at";
 
 function rowToEvent(row: EventRow): CalendarEvent {
+  const day = Number(row.day ?? 0);
+  // Rows written before dated events existed fall back to the current week.
+  const date = row.starts_at ? toDateKey(new Date(row.starts_at)) : dateKeyForDay(day);
   return {
     id: row.id,
     title: row.title,
     course: (row.course || "life") as CourseId,
-    day: Number(row.day ?? 0),
+    day: row.starts_at ? weekdayIndex(new Date(row.starts_at)) : day,
+    date,
     start: Number(row.start_hour ?? 9),
     end: Number(row.end_hour ?? 10),
     kind: (row.kind || "study") as CalendarEvent["kind"],
@@ -116,6 +128,7 @@ function rowToEvent(row: EventRow): CalendarEvent {
 }
 
 function eventToRow(event: CalendarEvent, userId: string) {
+  const date = event.date ?? dateKeyForDay(event.day);
   return {
     id: event.id,
     user_id: userId,
@@ -124,6 +137,8 @@ function eventToRow(event: CalendarEvent, userId: string) {
     day: event.day,
     start_hour: event.start,
     end_hour: event.end,
+    starts_at: dateAtHour(date, event.start).toISOString(),
+    ends_at: dateAtHour(date, event.end).toISOString(),
     kind: event.kind,
     rationale: event.rationale,
     notes: event.notes ?? "",
@@ -133,8 +148,15 @@ function eventToRow(event: CalendarEvent, userId: string) {
 
 type EventUpdate = Partial<ReturnType<typeof eventToRow>>;
 
-function eventPatchToRow(patch: Partial<CalendarEvent>) {
+function eventPatchToRow(patch: Partial<CalendarEvent>, current?: CalendarEvent) {
   const row: EventUpdate = {};
+  if (current) {
+    const merged = { ...current, ...patch };
+    const date = merged.date ?? dateKeyForDay(merged.day);
+    row.starts_at = dateAtHour(date, merged.start).toISOString();
+    row.ends_at = dateAtHour(date, merged.end).toISOString();
+  }
+  if (patch.date !== undefined) row.day = weekdayIndex(fromDateKey(patch.date));
   if (patch.title !== undefined) row.title = patch.title;
   if (patch.course !== undefined) row.course = patch.course;
   if (patch.day !== undefined) row.day = patch.day;
@@ -305,7 +327,11 @@ export function useCalendarEvents() {
       if (data && data.length) {
         setEvents((data as EventRow[]).map(rowToEvent));
       } else {
-        const seeded = seedEvents.map((e) => ({ ...e, id: newId() }));
+        const seeded = seedEvents.map((e) => ({
+          ...e,
+          id: newId(),
+          date: dateKeyForDay(e.day),
+        }));
         await supabase.from("calendar_events").insert(seeded.map((e) => eventToRow(e, userId)));
         if (active) setEvents(seeded);
       }
@@ -341,7 +367,7 @@ export function useCalendarEvents() {
     void (async () => {
       const { error } = await supabase
         .from("calendar_events")
-        .update(eventPatchToRow(patch))
+        .update(eventPatchToRow(patch, previous.find((e) => e.id === id)))
         .eq("id", id);
       if (error) {
         setEvents(previous);
