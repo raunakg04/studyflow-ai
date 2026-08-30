@@ -75,9 +75,11 @@ type EventRow = {
   kind: string;
   rationale: string;
   notes: string | null;
+  source: string | null;
 };
 
-const EVENT_COLUMNS = "id, title, course, day, start_hour, end_hour, kind, rationale, notes";
+const EVENT_COLUMNS =
+  "id, title, course, day, start_hour, end_hour, kind, rationale, notes, source";
 
 function rowToEvent(row: EventRow): CalendarEvent {
   return {
@@ -90,6 +92,7 @@ function rowToEvent(row: EventRow): CalendarEvent {
     kind: (row.kind || "study") as CalendarEvent["kind"],
     rationale: row.rationale ?? "",
     notes: row.notes ?? "",
+    source: row.source === "google" ? "google" : "manual",
   };
 }
 
@@ -105,6 +108,7 @@ function eventToRow(event: CalendarEvent, userId: string) {
     kind: event.kind,
     rationale: event.rationale,
     notes: event.notes ?? "",
+    source: event.source ?? "manual",
   };
 }
 
@@ -114,6 +118,17 @@ export function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+/** Bumps whenever an integration sync imports new rows. */
+function useSyncVersion() {
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    const onSync = () => setVersion((v) => v + 1);
+    window.addEventListener("tempo:data-synced", onSync);
+    return () => window.removeEventListener("tempo:data-synced", onSync);
+  }, []);
+  return version;
 }
 
 function useUserId() {
@@ -138,6 +153,7 @@ function useUserId() {
 
 export function useTasks() {
   const userId = useUserId();
+  const syncVersion = useSyncVersion();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const idRef = useRef<string | null>(null);
@@ -170,7 +186,7 @@ export function useTasks() {
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, syncVersion]);
 
   const addTask = useCallback((task: Omit<Task, "id">) => {
     const next: Task = { ...task, id: newId() };
@@ -200,6 +216,7 @@ export function useTasks() {
 
 export function useCalendarEvents() {
   const userId = useUserId();
+  const syncVersion = useSyncVersion();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const idRef = useRef<string | null>(null);
@@ -231,7 +248,7 @@ export function useCalendarEvents() {
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, syncVersion]);
 
   const addEvent = useCallback((event: Omit<CalendarEvent, "id">) => {
     const next: CalendarEvent = { ...event, id: newId() };

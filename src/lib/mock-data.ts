@@ -180,6 +180,7 @@ export type CalendarEvent = {
   kind: EventKind;
   rationale: string;
   notes?: string;
+  source?: "manual" | "google";
 };
 
 export const events: CalendarEvent[] = [
