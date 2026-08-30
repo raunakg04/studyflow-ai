@@ -57,6 +57,8 @@ export function ConnectionsPanel({ className }: { className?: string }) {
         }
         disabled={!googleConfigured}
         onConnect={() => googleConnect.mutate()}
+        onReconnect={() => googleConnect.mutate()}
+        reconnectLabel="Reconnect"
         onSync={() => googleSync.mutate()}
         onDisconnect={() => googleDisconnect.mutate()}
       />
@@ -69,6 +71,8 @@ export function ConnectionsPanel({ className }: { className?: string }) {
         loading={loading}
         error={errorText(canvasConnect.error ?? canvasSync.error) || canvas?.lastSyncError || ""}
         onConnect={() => setCanvasOpen(true)}
+        onReconnect={() => setCanvasOpen(true)}
+        reconnectLabel="Change link"
         onSync={() => canvasSync.mutate()}
         onDisconnect={() => canvasDisconnect.mutate()}
       />
@@ -83,6 +87,7 @@ export function ConnectionsPanel({ className }: { className?: string }) {
           canvasConnect.mutate(input, { onSuccess: () => setCanvasOpen(false) })
         }
       />
+
     </div>
   );
 }
@@ -96,6 +101,8 @@ function ConnectionCard({
   error,
   disabled,
   onConnect,
+  onReconnect,
+  reconnectLabel = "Reconnect",
   onSync,
   onDisconnect,
 }: {
@@ -107,6 +114,8 @@ function ConnectionCard({
   error: string;
   disabled?: boolean;
   onConnect: () => void;
+  onReconnect?: () => void;
+  reconnectLabel?: string;
   onSync: () => void;
   onDisconnect: () => void;
 }) {
@@ -165,6 +174,17 @@ function ConnectionCard({
             )}
             Sync now
           </Button>
+          {onReconnect ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full"
+              disabled={busy || disabled}
+              onClick={onReconnect}
+            >
+              <Link2 className="size-3.5" /> {reconnectLabel}
+            </Button>
+          ) : null}
           <Button
             size="sm"
             variant="ghost"
