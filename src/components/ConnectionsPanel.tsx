@@ -101,6 +101,8 @@ function ConnectionCard({
   error,
   disabled,
   onConnect,
+  onReconnect,
+  reconnectLabel = "Reconnect",
   onSync,
   onDisconnect,
 }: {
@@ -112,6 +114,8 @@ function ConnectionCard({
   error: string;
   disabled?: boolean;
   onConnect: () => void;
+  onReconnect?: () => void;
+  reconnectLabel?: string;
   onSync: () => void;
   onDisconnect: () => void;
 }) {
