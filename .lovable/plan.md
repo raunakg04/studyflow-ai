@@ -1,72 +1,35 @@
-# Apply the StudyFlow schema to your external Supabase project
+# Google Calendar + Canvas integration
 
-Your Table Editor is empty because no SQL has run against your new project yet. The repo already contains everything needed — nothing has to be written or changed. This is a run-only plan: no code edits, no schema changes.
+Bring real obligations into Tempo: read events from each student's Google Calendar and assignments from their Canvas account, then show them on the calendar and tasks pages alongside AI study blocks.
 
-## What the repo contains (verified)
+## What the student sees
 
-`supabase/migrations/` has 4 ordered files:
+**Settings → Connections** becomes real (today the two buttons only flip a local flag):
 
-1. `20260822111836_…sql` — `profiles` table (linked to auth users), grants, RLS policies, `set_updated_at()` trigger function, `handle_new_user()` trigger that auto-creates a profile row on signup
-2. `20260822111853_…sql` — revokes public execute on those two trigger functions (security hardening)
-3. `20260822113542_…sql` — `tasks` and `calendar_events` tables with grants, RLS, updated-at triggers
-4. `20260824171203_…sql` — `profiles.timezone` column, `scheduling_preferences`, `schedule_blocks`, `integrations` tables, UTC timestamp columns and indexes on tasks/events, all with grants + RLS
+- **Google Calendar** — "Connect" opens a Google consent popup. Once connected it shows the Google account email, last synced time, a "Sync now" button, and "Disconnect".
+- **Canvas** — "Connect" opens a small dialog asking for the school's Canvas URL (e.g. `canvas.school.edu`) and a personal access token, with a short line on where to generate the token (Canvas → Account → Settings → New Access Token). After saving it shows the Canvas user name, last synced time, "Sync now" and "Disconnect".
+- Failed syncs show a plain-language error on the card.
 
-`supabase/schema.sql` is the same 4 files concatenated — a one-paste bootstrap alternative.
+**Onboarding** connect step gets the same two real controls, with skip still allowed.
 
-## How to apply (choose one)
+**Calendar page** — imported Google events render as fixed (non-editable) bubbles marked with a small "Google" tag, so AI study blocks schedule around them. A "Sync" action in the calendar header refreshes both sources; the page also refreshes on load when the last sync is stale.
 
-### Option A — Supabase CLI (recommended, keeps migration history in sync)
+**Tasks page** — Canvas assignments appear as tasks with the course name, due date, and a "Canvas" badge. Completed-in-Canvas assignments are marked done. Students can still edit them locally; re-syncing won't clobber their edits (only due date/title from Canvas are refreshed).
 
-In a local clone of the GitHub repo:
+Read-only for now: nothing Tempo creates is pushed back to Google or Canvas.
 
-```bash
-bun install
-bunx supabase login
-bunx supabase link --project-ref <your-project-ref>   # Settings → General → Reference ID
-bunx supabase db push                                  # applies all 4 migrations in order
-```
+## Technical approach
 
-This records each migration in your project's history, so future `supabase db push` runs only apply new files.
+**Google Calendar** uses the Lovable App User Connector (`google_calendar`), so each student authorizes their own account:
+- Link the workspace OAuth client to the project, scopes `userinfo.email`, `userinfo.profile`, `calendar.readonly`.
+- New server-only table `app_user_connections` (service-role only, RLS on) storing each user's connection key encrypted with `APP_USER_CONNECTION_KEY_SECRET`.
+- Server functions in `src/lib/integrations.functions.ts`: start consent, exchange the OAuth callback code, sync, disconnect. Callback handled at a public route `/auth/connector-callback`.
+- Sync reads `calendarList` + `events` for the next 30 days and upserts into `calendar_events` with `source = 'google'` and `external_id` (existing columns), deleting google-sourced rows that vanished upstream.
 
-### Option B — SQL editor (one paste, no CLI)
+**Canvas** uses domain + personal access token:
+- Token stored encrypted (same crypto helper) in the existing `integrations` table row for `provider = 'canvas'`; the plaintext token never reaches the browser after saving.
+- Server function calls Canvas REST from the server (`/api/v1/users/self`, `/api/v1/users/self/todo` and `/api/v1/courses?enrollment_state=active` + per-course `assignments`), upserting into `tasks` with `source = 'canvas'` and `external_id`, mapping due date → `due_at`/`due`, course name → `course`.
 
-1. Open your project in the Supabase dashboard → **SQL Editor** → **New query**.
-2. Paste the entire contents of `supabase/schema.sql` from the repo.
-3. Run it once.
+**Shared**: both syncs update the `integrations` row (`status`, `account_label`, `last_synced_at`, `last_sync_error`). A `src/lib/integrations-store.ts` hook exposes connection state to Settings, onboarding, calendar, and tasks.
 
-Both paths create the identical schema. Option A is better long-term because it keeps history aligned with the repo.
-
-## Verify afterwards
-
-In the SQL editor, run the RLS check from `docs/standalone-migration.md`:
-
-```sql
-select c.relname as table_name,
-       c.relrowsecurity as rls_enabled,
-       count(p.polname) as policies
-from pg_class c
-join pg_namespace n on n.oid = c.relnamespace
-left join pg_policy p on p.polrelid = c.oid
-where n.nspname = 'public' and c.relkind = 'r'
-group by 1,2 order by 1;
-```
-
-Expected result — 6 tables, each with `rls_enabled = true` and at least one policy: `profiles` (4 policies), `tasks`, `calendar_events`, `scheduling_preferences`, `schedule_blocks`, `integrations` (1 policy each). The Table Editor should then show all 6 tables.
-
-Also confirm the signup trigger exists:
-
-```sql
-select tgname from pg_trigger where tgname = 'on_auth_user_created';
-```
-
-## Follow-up steps (after the schema lands)
-
-- Confirm Vercel env vars `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` point at this new project, then redeploy so the keys are baked into the build.
-- Confirm Supabase → Authentication → URL Configuration includes `https://studyflow-ai-rho-blue.vercel.app` as an allowed redirect URL.
-- Then run the acceptance checklist in `docs/standalone-migration.md` section 8 (email signup, Google OAuth, task creation, RLS isolation).
-
-## Technical details
-
-- No Lovable Cloud data is copied — your external project starts empty; test accounts sign up fresh there.
-- The Lovable Cloud database stays untouched; the Lovable preview keeps using it.
-- All 6 tables scope every policy to `auth.uid()`, so users can only ever see their own rows.
+**Deployment note**: the Google connector runs through Lovable's connector gateway, which injects its client key and encryption secret into the Lovable-hosted runtime. On the Vercel/GitHub deployment those same env vars have to be copied into Vercel or the Google connect button will fail there; Canvas works anywhere. I'll list the exact variable names once the connector client is linked.
