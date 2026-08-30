@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Check,
   Moon,
-  Plug,
   Plus,
   Sparkles,
   Sun,
@@ -19,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { ConnectionsPanel } from "@/components/ConnectionsPanel";
+import { useIntegrations } from "@/lib/integrations-store";
 import { AvailabilityEditor } from "@/components/AvailabilityEditor";
 import { useProfile, type Profile } from "@/lib/profile-store";
 import { cn } from "@/lib/utils";
@@ -318,7 +318,7 @@ function StepBody({
     ["Commitments", profile.commitments.join(", ") || "None"],
     [
       "Connected",
-      [profile.connected.google && "Google Calendar", profile.connected.canvas && "Canvas"]
+      [google?.connected && "Google Calendar", canvas?.connected && "Canvas"]
         .filter(Boolean)
         .join(", ") || "None yet",
     ],
