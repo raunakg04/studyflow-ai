@@ -26,6 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { RequireAuth } from "@/components/RequireAuth";
+import { useAuth } from "@/lib/use-auth";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   courses,
@@ -63,6 +64,7 @@ const DAY_END = 22;
 const HOUR_PX = 56;
 
 function CalendarPage() {
+  const { signedIn } = useAuth();
   const { events, addEvent, updateEvent, setKindMany, removeEvent } = useCalendarEvents();
   const [view, setView] = useState<"week" | "day">("week");
   const [activeDay, setActiveDay] = useState(3);
@@ -93,12 +95,14 @@ function CalendarPage() {
       title="Calendar"
       subtitle={`Aug 17 – 23 · ${suggestedCount} suggestion${suggestedCount === 1 ? "" : "s"} pending`}
       action={
+        signedIn ? (
         <div className="flex items-center gap-2">
           <AddEventDialog onCreate={addEvent} />
           <Button size="sm" variant="secondary" className="hidden rounded-full sm:inline-flex">
             <RefreshCw className="size-3.5" /> Re-plan
           </Button>
         </div>
+        ) : null
       }
     >
       <RequireAuth>
