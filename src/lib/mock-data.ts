@@ -175,6 +175,7 @@ export type CalendarEvent = {
   title: string;
   course: CourseId;
   day: number; // 0 = Monday
+  date?: string; // YYYY-MM-DD (local). Absent for legacy rows.
   start: number; // hours, 24h decimal
   end: number;
   kind: EventKind;
