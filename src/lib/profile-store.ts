@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AvailabilityRule = {
@@ -117,12 +118,17 @@ export function useProfile() {
   const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [hydrated, setHydrated] = useState(false);
   const userIdRef = useRef<string | null>(null);
+  const profileRef = useRef<Profile>(emptyProfile);
+  profileRef.current = profile;
 
   useEffect(() => {
     let active = true;
 
     const local = readLocal();
-    if (local) setProfile(local);
+    if (local) {
+      profileRef.current = local;
+      setProfile(local);
+    }
 
     async function loadRemote(userId: string) {
       const { data } = await supabase
@@ -135,6 +141,7 @@ export function useProfile() {
       if (!active) return;
       if (data) {
         const remote = rowToProfile(data as ProfileRow);
+        profileRef.current = remote;
         // A brand-new empty row shouldn't wipe locally captured onboarding answers.
         if (remote.completed || remote.name || remote.rhythm) {
           setProfile(remote);
