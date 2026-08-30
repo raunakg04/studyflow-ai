@@ -371,7 +371,7 @@ function AddEventDialog({
       title: title.trim() || "New event",
       course,
       day,
-      date: dayKeys[day],
+      date: dayKeys[day] ?? dateKeyForDay(day),
       start: s,
       end: en,
       kind: "fixed",
@@ -565,7 +565,7 @@ function EventBubble({
     );
     onUpdate({
       day: nextDay,
-      date: dayKeys[nextDay] ?? event.date,
+      date: dayKeys[nextDay] ?? event.date ?? dateKeyForDay(nextDay),
       start: nextStart,
       end: nextStart + duration,
     });
@@ -642,7 +642,7 @@ function EventBubble({
                   <button
                     key={d}
                     type="button"
-                    onClick={() => onUpdate({ day: i, date: dayKeys[i] ?? event.date })}
+                    onClick={() => onUpdate({ day: i, date: dayKeys[i] ?? event.date ?? dateKeyForDay(i) })}
                     className={cn(
                       "size-8 rounded-lg text-xs font-medium transition-colors",
                       event.day === i
