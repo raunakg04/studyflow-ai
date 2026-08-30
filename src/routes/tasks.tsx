@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Plus, Search, Sparkles, X } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,13 +30,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/tasks")({
   head: () => ({
     meta: [
-      { title: "Tasks & deadlines — StudyFlow" },
+      { title: "Tasks & deadlines — Tempo" },
       {
         name: "description",
         content:
           "Every assignment, reading, and personal to-do in one list, grouped by urgency with AI-suggested study blocks you can approve or adjust.",
       },
-      { property: "og:title", content: "Tasks & deadlines — StudyFlow" },
+      { property: "og:title", content: "Tasks & deadlines — Tempo" },
       {
         property: "og:description",
         content: "All your Canvas assignments and personal tasks in one prioritised list.",
@@ -81,7 +82,7 @@ function TasksPage() {
       subtitle={`${filtered.length} open across ${new Set(filtered.map((t) => t.course)).size} courses`}
       action={<AddTaskSheet onCreate={addTask} />}
     >
-
+      <RequireAuth>
       <div className="space-y-3">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -196,6 +197,7 @@ function TasksPage() {
       </div>
 
       <TaskDetail task={selected} onOpenChange={(o) => !o && setSelected(null)} />
+      </RequireAuth>
     </AppShell>
   );
 }

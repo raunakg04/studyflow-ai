@@ -179,6 +179,7 @@ export type CalendarEvent = {
   end: number;
   kind: EventKind;
   rationale: string;
+  notes?: string;
 };
 
 export const events: CalendarEvent[] = [

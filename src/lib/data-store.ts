@@ -74,9 +74,10 @@ type EventRow = {
   end_hour: number | string;
   kind: string;
   rationale: string;
+  notes: string | null;
 };
 
-const EVENT_COLUMNS = "id, title, course, day, start_hour, end_hour, kind, rationale";
+const EVENT_COLUMNS = "id, title, course, day, start_hour, end_hour, kind, rationale, notes";
 
 function rowToEvent(row: EventRow): CalendarEvent {
   return {
@@ -88,6 +89,7 @@ function rowToEvent(row: EventRow): CalendarEvent {
     end: Number(row.end_hour ?? 10),
     kind: (row.kind || "study") as CalendarEvent["kind"],
     rationale: row.rationale ?? "",
+    notes: row.notes ?? "",
   };
 }
 
@@ -102,6 +104,7 @@ function eventToRow(event: CalendarEvent, userId: string) {
     end_hour: event.end,
     kind: event.kind,
     rationale: event.rationale,
+    notes: event.notes ?? "",
   };
 }
 
@@ -135,14 +138,14 @@ function useUserId() {
 
 export function useTasks() {
   const userId = useUserId();
-  const [tasks, setTasks] = useState<Task[]>(seedTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const idRef = useRef<string | null>(null);
   idRef.current = userId;
 
   useEffect(() => {
     if (!userId) {
-      setTasks(seedTasks);
+      setTasks([]);
       setLoading(false);
       return;
     }
@@ -197,14 +200,14 @@ export function useTasks() {
 
 export function useCalendarEvents() {
   const userId = useUserId();
-  const [events, setEvents] = useState<CalendarEvent[]>(seedEvents);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const idRef = useRef<string | null>(null);
   idRef.current = userId;
 
   useEffect(() => {
     if (!userId) {
-      setEvents(seedEvents);
+      setEvents([]);
       setLoading(false);
       return;
     }

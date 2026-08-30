@@ -6,6 +6,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Move,
+  Pencil,
+  Plus,
   RefreshCw,
   Sparkles,
   Trash2,
@@ -13,12 +15,25 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { RequireAuth } from "@/components/RequireAuth";
+import { useAuth } from "@/lib/use-auth";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   courses,
   formatHour,
   weekDays,
   type CalendarEvent,
+  type CourseId,
 } from "@/lib/mock-data";
 import { useCalendarEvents } from "@/lib/data-store";
 import { cn } from "@/lib/utils";
@@ -28,13 +43,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/calendar")({
   head: () => ({
     meta: [
-      { title: "Weekly schedule — StudyFlow" },
+      { title: "Weekly schedule — Tempo" },
       {
         name: "description",
         content:
           "See classes, commitments, and AI-generated study blocks in one week view, with the reasoning behind every scheduled block.",
       },
-      { property: "og:title", content: "Weekly schedule — StudyFlow" },
+      { property: "og:title", content: "Weekly schedule — Tempo" },
       {
         property: "og:description",
         content: "Your classes, work, and AI-planned study blocks in a single adaptive calendar.",
@@ -49,7 +64,8 @@ const DAY_END = 22;
 const HOUR_PX = 56;
 
 function CalendarPage() {
-  const { events, updateEvent, setKindMany, removeEvent } = useCalendarEvents();
+  const { signedIn } = useAuth();
+  const { events, addEvent, updateEvent, setKindMany, removeEvent } = useCalendarEvents();
   const [view, setView] = useState<"week" | "day">("week");
   const [activeDay, setActiveDay] = useState(3);
   const [modify, setModify] = useState(false);
@@ -79,11 +95,17 @@ function CalendarPage() {
       title="Calendar"
       subtitle={`Aug 17 – 23 · ${suggestedCount} suggestion${suggestedCount === 1 ? "" : "s"} pending`}
       action={
-        <Button size="sm" variant="secondary" className="rounded-full">
-          <RefreshCw className="size-3.5" /> Re-plan
-        </Button>
+        signedIn ? (
+        <div className="flex items-center gap-2">
+          <AddEventDialog onCreate={addEvent} />
+          <Button size="sm" variant="secondary" className="hidden rounded-full sm:inline-flex">
+            <RefreshCw className="size-3.5" /> Re-plan
+          </Button>
+        </div>
+        ) : null
       }
     >
+      <RequireAuth>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-full bg-card p-1 shadow-soft">
           <button
@@ -249,7 +271,152 @@ function CalendarPage() {
           <Sparkles className="size-3" /> Tap a block for the reasoning
         </span>
       </div>
+      </RequireAuth>
     </AppShell>
+  );
+}
+
+function AddEventDialog({
+  onCreate,
+}: {
+  onCreate: (event: Omit<CalendarEvent, "id">) => CalendarEvent;
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [course, setCourse] = useState<CourseId>("life");
+  const [day, setDay] = useState(3);
+  const [start, setStart] = useState("09:00");
+  const [end, setEnd] = useState("10:00");
+  const [notes, setNotes] = useState("");
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const s = fromTimeValue(start);
+    const en = Math.max(fromTimeValue(end), s + 0.25);
+    onCreate({
+      title: title.trim() || "New event",
+      course,
+      day,
+      start: s,
+      end: en,
+      kind: "fixed",
+      rationale: "You added this event manually.",
+      notes,
+    });
+    setOpen(false);
+    setTitle("");
+    setNotes("");
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="rounded-full">
+          <Plus className="size-3.5" /> Add event
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="rounded-3xl sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add an event</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="event-title">Title</Label>
+            <Input
+              id="event-title"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Study group, shift, appointment…"
+              className="rounded-xl"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Course</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(courses) as CourseId[]).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCourse(id)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                    course === id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {courses[id].short}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Day</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {weekDays.map((d, i) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDay(i)}
+                  className={cn(
+                    "size-9 rounded-xl text-xs font-medium transition-colors",
+                    day === i
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {d[0]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-end gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="event-start">Start</Label>
+              <Input
+                id="event-start"
+                type="time"
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+                className="h-10 w-32 rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="event-end">End</Label>
+              <Input
+                id="event-end"
+                type="time"
+                value={end}
+                onChange={(e) => setEnd(e.target.value)}
+                className="h-10 w-32 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="event-notes">Notes</Label>
+            <Textarea
+              id="event-notes"
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional"
+              className="rounded-xl"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="submit" className="w-full rounded-full">
+              Add to calendar
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -374,6 +541,15 @@ function EventBubble({
         {editing ? (
           <div className="mt-3 space-y-3">
             <div>
+              <p className="mb-1.5 text-xs font-semibold">Title</p>
+              <Input
+                aria-label="Event title"
+                className="h-9 rounded-xl"
+                value={event.title}
+                onChange={(ev) => onUpdate({ title: ev.target.value })}
+              />
+            </div>
+            <div>
               <p className="mb-1.5 text-xs font-semibold">Day</p>
               <div className="flex flex-wrap gap-1">
                 {weekDays.map((d, i) => (
@@ -419,8 +595,19 @@ function EventBubble({
                 />
               </div>
             </div>
+            <div>
+              <p className="mb-1.5 text-xs font-semibold">Notes</p>
+              <Textarea
+                aria-label="Notes"
+                rows={3}
+                placeholder="Anything to remember for this block"
+                className="rounded-xl text-sm"
+                value={event.notes ?? ""}
+                onChange={(ev) => onUpdate({ notes: ev.target.value })}
+              />
+            </div>
             <Button size="sm" className="h-8 w-full rounded-full" onClick={() => setEditing(false)}>
-              <Check className="size-3.5" /> Save time
+              <Check className="size-3.5" /> Done
             </Button>
           </div>
         ) : (
@@ -433,6 +620,14 @@ function EventBubble({
                 {event.rationale}
               </p>
             </div>
+            {event.notes ? (
+              <div className="mt-2 rounded-xl bg-surface p-3">
+                <p className="text-xs font-semibold">Notes</p>
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
+                  {event.notes}
+                </p>
+              </div>
+            ) : null}
             <div className="mt-3 flex flex-wrap gap-2">
               {suggested ? (
                 <Button size="sm" className="h-8 rounded-full" onClick={onApprove}>
@@ -445,7 +640,7 @@ function EventBubble({
                 className="h-8 rounded-full"
                 onClick={() => setEditing(true)}
               >
-                Reschedule
+                <Pencil className="size-3.5" /> Edit
               </Button>
               <Button size="sm" variant="ghost" className="h-8 rounded-full" onClick={onDelete}>
                 <Trash2 className="size-3.5" /> Delete

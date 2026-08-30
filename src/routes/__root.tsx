@@ -80,13 +80,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "StudyFlow — AI study planner" },
+      { title: "Tempo — AI study planner" },
       {
         name: "description",
         content:
-          "StudyFlow turns Canvas deadlines, your calendar, and your routines into a study schedule that adapts with your week.",
+          "Tempo turns Canvas deadlines, your calendar, and your routines into a study schedule that adapts with your week.",
       },
-      { property: "og:title", content: "StudyFlow — AI study planner" },
+      { property: "og:title", content: "Tempo — AI study planner" },
       {
         property: "og:description",
         content: "Deadlines, tasks, and time-blocking in one adaptive student planner.",
@@ -131,6 +131,21 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+
+  // Apply the saved light/dark preference as early as possible.
+  useEffect(() => {
+    let theme: string | null = null;
+    try {
+      theme = window.localStorage.getItem("tempo.theme");
+    } catch {
+      /* storage unavailable */
+    }
+    if (!theme) {
+      theme = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+  }, []);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
