@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Move,
+  Plus,
   RefreshCw,
   Sparkles,
   Trash2,
@@ -13,12 +14,24 @@ import {
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { RequireAuth } from "@/components/RequireAuth";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   courses,
   formatHour,
   weekDays,
   type CalendarEvent,
+  type CourseId,
 } from "@/lib/mock-data";
 import { useCalendarEvents } from "@/lib/data-store";
 import { cn } from "@/lib/utils";
@@ -49,7 +62,7 @@ const DAY_END = 22;
 const HOUR_PX = 56;
 
 function CalendarPage() {
-  const { events, updateEvent, setKindMany, removeEvent } = useCalendarEvents();
+  const { events, addEvent, updateEvent, setKindMany, removeEvent } = useCalendarEvents();
   const [view, setView] = useState<"week" | "day">("week");
   const [activeDay, setActiveDay] = useState(3);
   const [modify, setModify] = useState(false);
@@ -79,11 +92,15 @@ function CalendarPage() {
       title="Calendar"
       subtitle={`Aug 17 – 23 · ${suggestedCount} suggestion${suggestedCount === 1 ? "" : "s"} pending`}
       action={
-        <Button size="sm" variant="secondary" className="rounded-full">
-          <RefreshCw className="size-3.5" /> Re-plan
-        </Button>
+        <div className="flex items-center gap-2">
+          <AddEventDialog onCreate={addEvent} />
+          <Button size="sm" variant="secondary" className="hidden rounded-full sm:inline-flex">
+            <RefreshCw className="size-3.5" /> Re-plan
+          </Button>
+        </div>
       }
     >
+      <RequireAuth>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-full bg-card p-1 shadow-soft">
           <button
@@ -249,6 +266,7 @@ function CalendarPage() {
           <Sparkles className="size-3" /> Tap a block for the reasoning
         </span>
       </div>
+      </RequireAuth>
     </AppShell>
   );
 }
