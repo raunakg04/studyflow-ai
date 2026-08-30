@@ -78,7 +78,7 @@ export function ConnectionsPanel({ className }: { className?: string }) {
         onOpenChange={setCanvasOpen}
         pending={canvasConnect.isPending}
         error={errorText(canvasConnect.error)}
-        defaultDomain={canvas?.domain ?? ""}
+        defaultFeedUrl=""
         onSubmit={(input) =>
           canvasConnect.mutate(input, { onSuccess: () => setCanvasOpen(false) })
         }
