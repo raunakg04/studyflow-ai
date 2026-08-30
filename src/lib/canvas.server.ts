@@ -7,36 +7,106 @@ type Client = SupabaseClient<Database>;
 
 export const CANVAS_CONNECTOR_ID = "canvas";
 
-export function normalizeCanvasDomain(input: string) {
-  const trimmed = input.trim().replace(/^https?:\/\//i, "").replace(/\/+$/, "");
-  const host = trimmed.split("/")[0] ?? "";
-  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(host)) {
-    throw new Error("Enter a valid Canvas address, like canvas.university.edu");
+/**
+ * Canvas calendar feed (iCal) support. Students whose admins block personal
+ * access tokens can still export a read-only calendar feed from Canvas:
+ * Calendar → Calendar Feed → copy the webcal:// link.
+ */
+export function normalizeCanvasFeedUrl(input: string) {
+  const raw = input.trim().replace(/^webcal:\/\//i, "https://");
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error("Enter the full Canvas calendar feed link (it ends in .ics)");
   }
-  return host.toLowerCase();
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("Enter the full Canvas calendar feed link (it ends in .ics)");
+  }
+  if (!/\.ics$/i.test(url.pathname)) {
+    throw new Error(
+      "That doesn't look like a Canvas calendar feed. In Canvas open Calendar → Calendar Feed and copy the link ending in .ics",
+    );
+  }
+  return url.toString();
 }
 
-async function canvasFetch<T>(domain: string, token: string, path: string): Promise<T> {
-  const res = await fetch(`https://${domain}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-  });
+export function canvasFeedHost(feedUrl: string) {
+  try {
+    return new URL(feedUrl).hostname;
+  } catch {
+    return "canvas";
+  }
+}
+
+async function fetchFeed(feedUrl: string) {
+  const res = await fetch(feedUrl, { headers: { Accept: "text/calendar, text/plain" } });
   const text = await res.text();
   if (!res.ok) {
-    if (res.status === 401 || res.status === 403) {
-      throw new Error("Canvas rejected the access token. Generate a new one and reconnect.");
-    }
-    throw new Error(`Canvas request failed (${res.status}): ${text.slice(0, 200)}`);
+    throw new Error(
+      `Canvas rejected the calendar feed (${res.status}). Copy a fresh feed link from Canvas and reconnect.`,
+    );
   }
-  return JSON.parse(text || "null") as T;
+  if (!text.includes("BEGIN:VCALENDAR")) {
+    throw new Error("That link didn't return a calendar feed. Copy the .ics link from Canvas.");
+  }
+  return text;
 }
 
-export async function canvasUserName(domain: string, token: string) {
-  const me = await canvasFetch<{ name?: string; short_name?: string }>(
-    domain,
-    token,
-    "/api/v1/users/self",
-  );
-  return me?.name || me?.short_name || "Canvas account";
+type ICalEvent = Record<string, string>;
+
+function unfold(raw: string) {
+  return raw.replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "");
+}
+
+function unescapeText(value: string) {
+  return value
+    .replace(/\\n/gi, " ")
+    .replace(/\\,/g, ",")
+    .replace(/\\;/g, ";")
+    .replace(/\\\\/g, "\\")
+    .trim();
+}
+
+function parseICalDate(value: string): Date | null {
+  const v = value.trim();
+  const utc = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/.exec(v);
+  if (utc) {
+    return new Date(
+      Date.UTC(+utc[1]!, +utc[2]! - 1, +utc[3]!, +utc[4]!, +utc[5]!, +utc[6]!),
+    );
+  }
+  const dateOnly = /^(\d{4})(\d{2})(\d{2})$/.exec(v);
+  if (dateOnly) {
+    return new Date(Date.UTC(+dateOnly[1]!, +dateOnly[2]! - 1, +dateOnly[3]!, 23, 59, 0));
+  }
+  const parsed = new Date(v);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function parseICal(raw: string): ICalEvent[] {
+  const lines = unfold(raw).split("\n");
+  const events: ICalEvent[] = [];
+  let current: ICalEvent | null = null;
+  for (const line of lines) {
+    if (line.startsWith("BEGIN:VEVENT")) {
+      current = {};
+      continue;
+    }
+    if (line.startsWith("END:VEVENT")) {
+      if (current) events.push(current);
+      current = null;
+      continue;
+    }
+    if (!current) continue;
+    const idx = line.indexOf(":");
+    if (idx === -1) continue;
+    const rawKey = line.slice(0, idx);
+    const value = line.slice(idx + 1);
+    const key = rawKey.split(";")[0]!.toUpperCase();
+    current[key] = value;
+  }
+  return events;
 }
 
 function bucketFor(due: Date | null): "today" | "week" | "later" {
@@ -55,31 +125,28 @@ function dueLabelFor(due: Date | null) {
   })}, ${due.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 }
 
+/** Canvas summaries look like "Essay draft [ENGL 201 Fall]". */
+function splitSummary(summary: string) {
+  const match = /^(.*?)\s*\[([^\]]+)\]\s*$/.exec(summary);
+  if (match) return { title: match[1]!.trim() || "Canvas assignment", course: match[2]!.trim() };
+  return { title: summary.trim() || "Canvas assignment", course: "Canvas" };
+}
+
+export async function canvasFeedLabel(feedUrl: string) {
+  const raw = await fetchFeed(feedUrl);
+  const name = /(?:^|\n)X-WR-CALNAME:(.*)/i.exec(unfold(raw).replace(/\r/g, ""));
+  return name?.[1] ? unescapeText(name[1]) : `Canvas feed (${canvasFeedHost(feedUrl)})`;
+}
+
 export async function syncCanvasForUser(supabase: Client, userId: string) {
-  const token = await getConnectionKeyForUser(userId, CANVAS_CONNECTOR_ID);
-  if (!token) throw new Error("Canvas is not connected");
+  const feedUrl = await getConnectionKeyForUser(userId, CANVAS_CONNECTOR_ID);
+  if (!feedUrl) throw new Error("Canvas is not connected");
 
-  const { data: integration } = await supabase
-    .from("integrations")
-    .select("settings")
-    .eq("provider", CANVAS_CONNECTOR_ID)
-    .maybeSingle();
-  const domain = ((integration?.settings ?? {}) as { domain?: string }).domain;
-  if (!domain) throw new Error("Canvas school address is missing. Reconnect Canvas.");
+  const raw = await fetchFeed(feedUrl);
+  const parsed = parseICal(raw);
 
-  const courses = await canvasFetch<{ id: number; name?: string }[]>(
-    domain,
-    token,
-    "/api/v1/courses?enrollment_state=active&per_page=50",
-  );
-
-  type Assignment = {
-    id: number;
-    name?: string;
-    due_at?: string | null;
-    html_url?: string;
-    description?: string | null;
-  };
+  const cutoffPast = Date.now() - 2 * 86_400_000;
+  const cutoffFuture = Date.now() + 120 * 86_400_000;
 
   const incoming: {
     externalId: string;
@@ -88,25 +155,20 @@ export async function syncCanvasForUser(supabase: Client, userId: string) {
     due: Date | null;
   }[] = [];
 
-  for (const course of (courses ?? []).slice(0, 20)) {
-    let assignments: Assignment[] = [];
-    try {
-      assignments = await canvasFetch<Assignment[]>(
-        domain,
-        token,
-        `/api/v1/courses/${course.id}/assignments?bucket=upcoming&per_page=50`,
-      );
-    } catch {
-      continue; // A single locked course shouldn't fail the whole sync.
-    }
-    for (const a of assignments ?? []) {
-      incoming.push({
-        externalId: `${course.id}:${a.id}`,
-        title: a.name?.trim() || "Canvas assignment",
-        courseName: course.name?.trim() || "Canvas",
-        due: a.due_at ? new Date(a.due_at) : null,
-      });
-    }
+  for (const event of parsed) {
+    const summary = event["SUMMARY"] ? unescapeText(event["SUMMARY"]) : "";
+    if (!summary) continue;
+    const dtRaw = event["DTSTART"] ?? event["DUE"] ?? event["DTEND"];
+    const due = dtRaw ? parseICalDate(dtRaw) : null;
+    if (due && (due.getTime() < cutoffPast || due.getTime() > cutoffFuture)) continue;
+    const uid = event["UID"]?.trim();
+    const { title, course } = splitSummary(summary);
+    incoming.push({
+      externalId: uid || `feed:${title}:${due?.toISOString() ?? "none"}`,
+      title,
+      courseName: course,
+      due,
+    });
   }
 
   const { data: existing } = await supabase
@@ -116,7 +178,10 @@ export async function syncCanvasForUser(supabase: Client, userId: string) {
   const byExternal = new Map((existing ?? []).map((t) => [t.external_id, t.id]));
 
   const inserts: Record<string, unknown>[] = [];
+  const seen = new Set<string>();
   for (const item of incoming) {
+    if (seen.has(item.externalId)) continue;
+    seen.add(item.externalId);
     const shared = {
       title: item.title,
       due: item.due ? item.due.toISOString().slice(0, 10) : null,
@@ -156,5 +221,5 @@ export async function syncCanvasForUser(supabase: Client, userId: string) {
     lastSyncError: null,
   });
 
-  return { imported: inserts.length, updated: incoming.length - inserts.length };
+  return { imported: inserts.length, updated: seen.size - inserts.length };
 }
