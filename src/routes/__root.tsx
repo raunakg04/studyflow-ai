@@ -132,6 +132,21 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
+  // Apply the saved light/dark preference as early as possible.
+  useEffect(() => {
+    let theme: string | null = null;
+    try {
+      theme = window.localStorage.getItem("tempo.theme");
+    } catch {
+      /* storage unavailable */
+    }
+    if (!theme) {
+      theme = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+  }, []);
+
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
