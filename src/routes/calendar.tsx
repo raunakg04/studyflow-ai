@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Move,
+  Pencil,
   Plus,
   RefreshCw,
   Sparkles,
@@ -271,6 +272,150 @@ function CalendarPage() {
   );
 }
 
+function AddEventDialog({
+  onCreate,
+}: {
+  onCreate: (event: Omit<CalendarEvent, "id">) => CalendarEvent;
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [course, setCourse] = useState<CourseId>("life");
+  const [day, setDay] = useState(3);
+  const [start, setStart] = useState("09:00");
+  const [end, setEnd] = useState("10:00");
+  const [notes, setNotes] = useState("");
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const s = fromTimeValue(start);
+    const en = Math.max(fromTimeValue(end), s + 0.25);
+    onCreate({
+      title: title.trim() || "New event",
+      course,
+      day,
+      start: s,
+      end: en,
+      kind: "fixed",
+      rationale: "You added this event manually.",
+      notes,
+    });
+    setOpen(false);
+    setTitle("");
+    setNotes("");
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="rounded-full">
+          <Plus className="size-3.5" /> Add event
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="rounded-3xl sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add an event</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="event-title">Title</Label>
+            <Input
+              id="event-title"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Study group, shift, appointment…"
+              className="rounded-xl"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Course</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(courses) as CourseId[]).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCourse(id)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                    course === id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {courses[id].short}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Day</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {weekDays.map((d, i) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDay(i)}
+                  className={cn(
+                    "size-9 rounded-xl text-xs font-medium transition-colors",
+                    day === i
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface text-muted-foreground hover:bg-accent",
+                  )}
+                >
+                  {d[0]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-end gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="event-start">Start</Label>
+              <Input
+                id="event-start"
+                type="time"
+                value={start}
+                onChange={(e) => setStart(e.target.value)}
+                className="h-10 w-32 rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="event-end">End</Label>
+              <Input
+                id="event-end"
+                type="time"
+                value={end}
+                onChange={(e) => setEnd(e.target.value)}
+                className="h-10 w-32 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="event-notes">Notes</Label>
+            <Textarea
+              id="event-notes"
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional"
+              className="rounded-xl"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="submit" className="w-full rounded-full">
+              Add to calendar
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function toTimeValue(h: number) {
   const hh = Math.floor(h);
   const mm = Math.round((h - hh) * 60);
@@ -392,6 +537,15 @@ function EventBubble({
         {editing ? (
           <div className="mt-3 space-y-3">
             <div>
+              <p className="mb-1.5 text-xs font-semibold">Title</p>
+              <Input
+                aria-label="Event title"
+                className="h-9 rounded-xl"
+                value={event.title}
+                onChange={(ev) => onUpdate({ title: ev.target.value })}
+              />
+            </div>
+            <div>
               <p className="mb-1.5 text-xs font-semibold">Day</p>
               <div className="flex flex-wrap gap-1">
                 {weekDays.map((d, i) => (
@@ -437,8 +591,19 @@ function EventBubble({
                 />
               </div>
             </div>
+            <div>
+              <p className="mb-1.5 text-xs font-semibold">Notes</p>
+              <Textarea
+                aria-label="Notes"
+                rows={3}
+                placeholder="Anything to remember for this block"
+                className="rounded-xl text-sm"
+                value={event.notes ?? ""}
+                onChange={(ev) => onUpdate({ notes: ev.target.value })}
+              />
+            </div>
             <Button size="sm" className="h-8 w-full rounded-full" onClick={() => setEditing(false)}>
-              <Check className="size-3.5" /> Save time
+              <Check className="size-3.5" /> Done
             </Button>
           </div>
         ) : (
@@ -451,6 +616,14 @@ function EventBubble({
                 {event.rationale}
               </p>
             </div>
+            {event.notes ? (
+              <div className="mt-2 rounded-xl bg-surface p-3">
+                <p className="text-xs font-semibold">Notes</p>
+                <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-muted-foreground">
+                  {event.notes}
+                </p>
+              </div>
+            ) : null}
             <div className="mt-3 flex flex-wrap gap-2">
               {suggested ? (
                 <Button size="sm" className="h-8 rounded-full" onClick={onApprove}>
@@ -463,7 +636,7 @@ function EventBubble({
                 className="h-8 rounded-full"
                 onClick={() => setEditing(true)}
               >
-                Reschedule
+                <Pencil className="size-3.5" /> Edit
               </Button>
               <Button size="sm" variant="ghost" className="h-8 rounded-full" onClick={onDelete}>
                 <Trash2 className="size-3.5" /> Delete
