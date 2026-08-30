@@ -187,18 +187,17 @@ function CanvasDialog({
   onOpenChange,
   pending,
   error,
-  defaultDomain,
+  defaultFeedUrl,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pending: boolean;
   error: string;
-  defaultDomain: string;
-  onSubmit: (input: { domain: string; token: string }) => void;
+  defaultFeedUrl: string;
+  onSubmit: (input: { feedUrl: string }) => void;
 }) {
-  const [domain, setDomain] = useState(defaultDomain);
-  const [token, setToken] = useState("");
+  const [feedUrl, setFeedUrl] = useState(defaultFeedUrl);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -210,34 +209,24 @@ function CanvasDialog({
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmit({ domain, token });
+            onSubmit({ feedUrl });
           }}
         >
           <div className="space-y-1.5">
-            <Label htmlFor="canvas-domain">Your school's Canvas address</Label>
+            <Label htmlFor="canvas-feed">Canvas calendar feed link</Label>
             <Input
-              id="canvas-domain"
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              placeholder="canvas.university.edu"
-              className="rounded-xl"
-              autoComplete="off"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="canvas-token">Access token</Label>
-            <Input
-              id="canvas-token"
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Paste your Canvas token"
+              id="canvas-feed"
+              value={feedUrl}
+              onChange={(e) => setFeedUrl(e.target.value)}
+              placeholder="https://canvas.university.edu/feeds/calendars/....ics"
               className="rounded-xl"
               autoComplete="off"
             />
             <p className="text-xs text-muted-foreground">
-              In Canvas, open Account → Settings → New Access Token, then paste it here. Tempo
-              stores it encrypted and only uses it to read your assignments.
+              In Canvas, open <span className="font-medium">Calendar</span> →{" "}
+              <span className="font-medium">Calendar Feed</span> and copy the link (it ends in
+              .ics). No access token needed. Tempo stores the link encrypted and only reads your
+              due dates.
             </p>
           </div>
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
@@ -252,3 +241,4 @@ function CanvasDialog({
     </Dialog>
   );
 }
+
