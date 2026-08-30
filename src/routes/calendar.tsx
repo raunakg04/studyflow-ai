@@ -36,6 +36,16 @@ import {
   type CourseId,
 } from "@/lib/mock-data";
 import { useCalendarEvents } from "@/lib/data-store";
+import {
+  addDays,
+  dateKeyForDay,
+  formatWeekRange,
+  hoursFromDate,
+  startOfWeek,
+  toDateKey,
+  weekDates,
+  weekLabel,
+} from "@/lib/dates";
 import { useIntegrations } from "@/lib/integrations-store";
 import { cn } from "@/lib/utils";
 
@@ -85,18 +95,34 @@ function CalendarPage() {
     googleSync.mutate();
   }, [google?.connected, google?.lastSyncedAt, googleSync]);
   const [view, setView] = useState<"week" | "day">("week");
-  const [activeDay, setActiveDay] = useState(3);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const todayKey = toDateKey(now);
+  const currentWeekStart = startOfWeek(now);
+  const weekStart = addDays(currentWeekStart, weekOffset * 7);
+  const days = weekDates(weekStart);
+  const dayKeys = days.map(toDateKey);
+  const todayIndexInWeek = dayKeys.indexOf(todayKey);
+  const [activeDay, setActiveDay] = useState(() => (new Date().getDay() + 6) % 7);
   const [modify, setModify] = useState(false);
 
   const visibleDays = view === "week" ? weekDays.map((_, i) => i) : [activeDay];
-  const suggestedCount = events.filter((e) => e.kind === "suggested").length;
+  const weekEvents = events.filter((e) =>
+    dayKeys.includes(e.date ?? dateKeyForDay(e.day)),
+  );
+  const suggestedCount = weekEvents.filter((e) => e.kind === "suggested").length;
 
   function approve(id: string) {
     updateEvent(id, { kind: "study" });
   }
   function approveAll() {
     setKindMany(
-      events.filter((e) => e.kind === "suggested").map((e) => e.id),
+      weekEvents.filter((e) => e.kind === "suggested").map((e) => e.id),
       "study",
     );
   }
@@ -111,11 +137,11 @@ function CalendarPage() {
   return (
     <AppShell
       title="Calendar"
-      subtitle={`Aug 17 – 23 · ${suggestedCount} suggestion${suggestedCount === 1 ? "" : "s"} pending`}
+      subtitle={`${formatWeekRange(weekStart)} · ${suggestedCount} suggestion${suggestedCount === 1 ? "" : "s"} pending`}
       action={
         signedIn ? (
         <div className="flex items-center gap-2">
-          <AddEventDialog onCreate={addEvent} />
+          <AddEventDialog onCreate={addEvent} dayKeys={dayKeys} />
           {google?.connected || canvas?.connected ? (
             <Button
               size="sm"
@@ -136,13 +162,21 @@ function CalendarPage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-full bg-card p-1 shadow-soft">
           <button
+            onClick={() => setWeekOffset((w) => w - 1)}
             className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent"
             aria-label="Previous week"
           >
             <ChevronLeft className="size-4" />
           </button>
-          <span className="px-2 text-sm font-medium">This week</span>
           <button
+            onClick={() => setWeekOffset(0)}
+            className="px-2 text-sm font-medium"
+            title="Jump to this week"
+          >
+            {weekLabel(weekOffset)}
+          </button>
+          <button
+            onClick={() => setWeekOffset((w) => w + 1)}
             className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent"
             aria-label="Next week"
           >
@@ -198,7 +232,7 @@ function CalendarPage() {
                   : "bg-card text-muted-foreground shadow-soft",
               )}
             >
-              {d}
+              {d} {days[i]?.getDate()}
             </button>
           ))}
         </div>
@@ -217,12 +251,20 @@ function CalendarPage() {
                 <p
                   className={cn(
                     "text-xs font-semibold uppercase tracking-wide",
-                    d === 3 ? "text-primary" : "text-muted-foreground",
+                    d === todayIndexInWeek ? "text-primary" : "text-muted-foreground",
                   )}
                 >
                   {weekDays[d]}
                 </p>
-                <p className="text-sm font-medium">{17 + d}</p>
+                <p
+                  className={cn(
+                    "text-sm font-medium",
+                    d === todayIndexInWeek &&
+                      "mx-auto flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground",
+                  )}
+                >
+                  {days[d]?.getDate()}
+                </p>
               </div>
             ))}
           </div>
@@ -258,23 +300,26 @@ function CalendarPage() {
                   />
                 ))}
 
-                {d === 3 ? (
+                {d === todayIndexInWeek &&
+                hoursFromDate(now) >= DAY_START &&
+                hoursFromDate(now) <= DAY_END ? (
                   <div
                     className="absolute inset-x-0 z-10 border-t-2 border-primary"
-                    style={{ top: (16.75 - DAY_START) * HOUR_PX }}
+                    style={{ top: (hoursFromDate(now) - DAY_START) * HOUR_PX }}
                   >
                     <span className="absolute -left-0.5 -top-1 size-2 rounded-full bg-primary" />
                   </div>
                 ) : null}
 
-                {events
-                  .filter((e) => e.day === d)
+                {weekEvents
+                  .filter((e) => (e.date ?? dateKeyForDay(e.day)) === dayKeys[d])
                   .map((e) => (
                     <EventBubble
                       key={e.id}
                       event={e}
                       modify={modify}
                       dayOptions={visibleDays}
+                      dayKeys={dayKeys}
                       onApprove={() => approve(e.id)}
                       onDelete={() => remove(e.id)}
                       onUpdate={(next) => update(e.id, next)}
@@ -305,13 +350,15 @@ function CalendarPage() {
 
 function AddEventDialog({
   onCreate,
+  dayKeys,
 }: {
   onCreate: (event: Omit<CalendarEvent, "id">) => CalendarEvent;
+  dayKeys: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [course, setCourse] = useState<CourseId>("life");
-  const [day, setDay] = useState(3);
+  const [day, setDay] = useState(() => (new Date().getDay() + 6) % 7);
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("10:00");
   const [notes, setNotes] = useState("");
@@ -324,6 +371,7 @@ function AddEventDialog({
       title: title.trim() || "New event",
       course,
       day,
+      date: dayKeys[day],
       start: s,
       end: en,
       kind: "fixed",
@@ -461,6 +509,7 @@ function EventBubble({
   event,
   modify,
   dayOptions,
+  dayKeys,
   onApprove,
   onDelete,
   onUpdate,
@@ -468,6 +517,7 @@ function EventBubble({
   event: CalendarEvent;
   modify: boolean;
   dayOptions: number[];
+  dayKeys: string[];
   onApprove: () => void;
   onDelete: () => void;
   onUpdate: (next: Partial<CalendarEvent>) => void;
@@ -513,7 +563,12 @@ function EventBubble({
       DAY_END - duration,
       Math.max(DAY_START, Math.round((event.start + snapped) * 4) / 4),
     );
-    onUpdate({ day: nextDay, start: nextStart, end: nextStart + duration });
+    onUpdate({
+      day: nextDay,
+      date: dayKeys[nextDay] ?? event.date,
+      start: nextStart,
+      end: nextStart + duration,
+    });
   }
 
   const bubble = (
@@ -587,7 +642,7 @@ function EventBubble({
                   <button
                     key={d}
                     type="button"
-                    onClick={() => onUpdate({ day: i })}
+                    onClick={() => onUpdate({ day: i, date: dayKeys[i] ?? event.date })}
                     className={cn(
                       "size-8 rounded-lg text-xs font-medium transition-colors",
                       event.day === i
