@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AvailabilityRule = {
@@ -117,12 +118,17 @@ export function useProfile() {
   const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [hydrated, setHydrated] = useState(false);
   const userIdRef = useRef<string | null>(null);
+  const profileRef = useRef<Profile>(emptyProfile);
+  profileRef.current = profile;
 
   useEffect(() => {
     let active = true;
 
     const local = readLocal();
-    if (local) setProfile(local);
+    if (local) {
+      profileRef.current = local;
+      setProfile(local);
+    }
 
     async function loadRemote(userId: string) {
       const { data } = await supabase
@@ -135,6 +141,7 @@ export function useProfile() {
       if (!active) return;
       if (data) {
         const remote = rowToProfile(data as ProfileRow);
+        profileRef.current = remote;
         // A brand-new empty row shouldn't wipe locally captured onboarding answers.
         if (remote.completed || remote.name || remote.rhythm) {
           setProfile(remote);
@@ -171,19 +178,23 @@ export function useProfile() {
   }, []);
 
   const update = useCallback((patch: Partial<Profile>) => {
-    setProfile((prev) => {
-      const next = { ...prev, ...patch };
-      try {
-        window.localStorage.setItem(KEY, JSON.stringify(next));
-      } catch {
-        /* storage unavailable */
+    const next = { ...profileRef.current, ...patch };
+    profileRef.current = next;
+    setProfile(next);
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(next));
+    } catch {
+      /* storage unavailable */
+    }
+    const userId = userIdRef.current;
+    if (!userId) return;
+    void (async () => {
+      const { error } = await supabase.from("profiles").upsert(profileToRow(next, userId));
+      if (error) {
+        console.error("[tempo] failed to save profile:", error.message);
+        toast.error("Couldn't save your settings", { description: error.message });
       }
-      const userId = userIdRef.current;
-      if (userId) {
-        void supabase.from("profiles").upsert(profileToRow(next, userId));
-      }
-      return next;
-    });
+    })();
   }, []);
 
   return { profile, update, hydrated };
