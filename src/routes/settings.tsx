@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { AvailabilityEditor } from "@/components/AvailabilityEditor";
+import { ConnectionsPanel } from "@/components/ConnectionsPanel";
 import { useProfile } from "@/lib/profile-store";
 
 export const Route = createFileRoute("/settings")({
@@ -112,41 +113,11 @@ function SettingsPage() {
 
         <section className="rounded-3xl bg-card p-5 shadow-soft">
           <h2 className="text-base font-semibold">Connections</h2>
-          <div className="mt-4 space-y-3">
-            {[
-              { key: "google" as const, name: "Google Calendar", desc: "Classes, work shifts, and events" },
-              { key: "canvas" as const, name: "Canvas", desc: "Assignments, quizzes, and due dates" },
-            ].map((c) => {
-              const connected = profile.connected[c.key];
-              return (
-                <div key={c.key} className="flex items-center gap-3 rounded-2xl bg-surface p-4">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-card">
-                    <Plug className="size-4 text-primary" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{c.name}</p>
-                    <p className="text-sm text-muted-foreground">{c.desc}</p>
-                  </div>
-                  <Button
-                    variant={connected ? "secondary" : "default"}
-                    size="sm"
-                    className="rounded-full"
-                    onClick={() =>
-                      update({ connected: { ...profile.connected, [c.key]: !connected } })
-                    }
-                  >
-                    {connected ? (
-                      <>
-                        <Check className="size-3.5" /> Connected
-                      </>
-                    ) : (
-                      "Connect"
-                    )}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tempo reads your Google Calendar events and Canvas assignments so it can plan around
+            them.
+          </p>
+          <ConnectionsPanel className="mt-4" />
         </section>
 
         <AccountSection />
