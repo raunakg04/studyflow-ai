@@ -36,6 +36,9 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { profile, update } = useProfile();
+  useGoogleReturnNotice();
+
+
 
   return (
     <AppShell title="Preferences" subtitle="The assistant plans around everything here">
