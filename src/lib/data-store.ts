@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
   events as seedEvents,
@@ -63,6 +64,24 @@ function taskToRow(task: Task, userId: string) {
   };
 }
 
+type TaskUpdate = Partial<ReturnType<typeof taskToRow>>;
+
+function taskPatchToRow(patch: Partial<Task>) {
+  const row: TaskUpdate = {};
+  if (patch.title !== undefined) row.title = patch.title;
+  if (patch.course !== undefined) row.course = patch.course;
+  if (patch.due !== undefined) row.due = patch.due || null;
+  if (patch.dueLabel !== undefined) row.due_label = patch.dueLabel;
+  if (patch.bucket !== undefined) row.bucket = patch.bucket;
+  if (patch.effortHours !== undefined) row.effort_hours = patch.effortHours;
+  if (patch.status !== undefined) row.status = patch.status;
+  if (patch.source !== undefined) row.source = patch.source;
+  if (patch.description !== undefined) row.description = patch.description;
+  if (patch.subtasks !== undefined) row.subtasks = patch.subtasks;
+  if (patch.suggestions !== undefined) row.suggestions = patch.suggestions;
+  return row;
+}
+
 /* ---------------- events ---------------- */
 
 type EventRow = {
@@ -112,12 +131,33 @@ function eventToRow(event: CalendarEvent, userId: string) {
   };
 }
 
+type EventUpdate = Partial<ReturnType<typeof eventToRow>>;
+
+function eventPatchToRow(patch: Partial<CalendarEvent>) {
+  const row: EventUpdate = {};
+  if (patch.title !== undefined) row.title = patch.title;
+  if (patch.course !== undefined) row.course = patch.course;
+  if (patch.day !== undefined) row.day = patch.day;
+  if (patch.start !== undefined) row.start_hour = patch.start;
+  if (patch.end !== undefined) row.end_hour = patch.end;
+  if (patch.kind !== undefined) row.kind = patch.kind;
+  if (patch.rationale !== undefined) row.rationale = patch.rationale;
+  if (patch.notes !== undefined) row.notes = patch.notes ?? "";
+  if (patch.source !== undefined) row.source = patch.source ?? "manual";
+  return row;
+}
+
 /* ---------------- shared helpers ---------------- */
 
 export function newId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function reportWriteError(what: string, message: string) {
+  console.error(`[tempo] failed to save ${what}:`, message);
+  toast.error(`Couldn't save ${what}`, { description: message });
 }
 
 /** Bumps whenever an integration sync imports new rows. */
@@ -158,6 +198,9 @@ export function useTasks() {
   const [loading, setLoading] = useState(true);
   const idRef = useRef<string | null>(null);
   idRef.current = userId;
+  // Mirror of the latest state so writes can roll back without a stale closure.
+  const tasksRef = useRef<Task[]>([]);
+  tasksRef.current = tasks;
 
   useEffect(() => {
     if (!userId) {
@@ -190,25 +233,46 @@ export function useTasks() {
 
   const addTask = useCallback((task: Omit<Task, "id">) => {
     const next: Task = { ...task, id: newId() };
-    setTasks((prev) => [...prev, next]);
+    const previous = tasksRef.current;
+    setTasks([...previous, next]);
     const uid = idRef.current;
-    if (uid) void supabase.from("tasks").insert(taskToRow(next, uid));
+    if (uid) {
+      void (async () => {
+        const { error } = await supabase.from("tasks").insert(taskToRow(next, uid));
+        if (error) {
+          setTasks(previous);
+          reportWriteError("this task", error.message);
+        }
+      })();
+    }
     return next;
   }, []);
 
   const updateTask = useCallback((id: string, patch: Partial<Task>) => {
-    setTasks((prev) => {
-      const next = prev.map((t) => (t.id === id ? { ...t, ...patch } : t));
-      const uid = idRef.current;
-      const row = next.find((t) => t.id === id);
-      if (uid && row) void supabase.from("tasks").update(taskToRow(row, uid)).eq("id", id);
-      return next;
-    });
+    const previous = tasksRef.current;
+    setTasks(previous.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    const uid = idRef.current;
+    if (!uid) return;
+    void (async () => {
+      const { error } = await supabase.from("tasks").update(taskPatchToRow(patch)).eq("id", id);
+      if (error) {
+        setTasks(previous);
+        reportWriteError("this task", error.message);
+      }
+    })();
   }, []);
 
   const removeTask = useCallback((id: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
-    if (idRef.current) void supabase.from("tasks").delete().eq("id", id);
+    const previous = tasksRef.current;
+    setTasks(previous.filter((t) => t.id !== id));
+    if (!idRef.current) return;
+    void (async () => {
+      const { error } = await supabase.from("tasks").delete().eq("id", id);
+      if (error) {
+        setTasks(previous);
+        reportWriteError("this deletion", error.message);
+      }
+    })();
   }, []);
 
   return { tasks, loading, addTask, updateTask, removeTask };
@@ -221,6 +285,8 @@ export function useCalendarEvents() {
   const [loading, setLoading] = useState(true);
   const idRef = useRef<string | null>(null);
   idRef.current = userId;
+  const eventsRef = useRef<CalendarEvent[]>([]);
+  eventsRef.current = events;
 
   useEffect(() => {
     if (!userId) {
@@ -252,35 +318,63 @@ export function useCalendarEvents() {
 
   const addEvent = useCallback((event: Omit<CalendarEvent, "id">) => {
     const next: CalendarEvent = { ...event, id: newId() };
-    setEvents((prev) => [...prev, next]);
+    const previous = eventsRef.current;
+    setEvents([...previous, next]);
     const uid = idRef.current;
-    if (uid) void supabase.from("calendar_events").insert(eventToRow(next, uid));
+    if (uid) {
+      void (async () => {
+        const { error } = await supabase.from("calendar_events").insert(eventToRow(next, uid));
+        if (error) {
+          setEvents(previous);
+          reportWriteError("this event", error.message);
+        }
+      })();
+    }
     return next;
   }, []);
 
   const updateEvent = useCallback((id: string, patch: Partial<CalendarEvent>) => {
-    setEvents((prev) => {
-      const next = prev.map((e) => (e.id === id ? { ...e, ...patch } : e));
-      const uid = idRef.current;
-      const row = next.find((e) => e.id === id);
-      if (uid && row) {
-        void supabase.from("calendar_events").update(eventToRow(row, uid)).eq("id", id);
+    const previous = eventsRef.current;
+    setEvents(previous.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    const uid = idRef.current;
+    if (!uid) return;
+    void (async () => {
+      const { error } = await supabase
+        .from("calendar_events")
+        .update(eventPatchToRow(patch))
+        .eq("id", id);
+      if (error) {
+        setEvents(previous);
+        reportWriteError("this event", error.message);
       }
-      return next;
-    });
+    })();
   }, []);
 
   const setKindMany = useCallback((ids: string[], kind: CalendarEvent["kind"]) => {
-    setEvents((prev) => prev.map((e) => (ids.includes(e.id) ? { ...e, kind } : e)));
-    if (idRef.current && ids.length) {
-      void supabase.from("calendar_events").update({ kind }).in("id", ids);
-    }
+    if (!ids.length) return;
+    const previous = eventsRef.current;
+    setEvents(previous.map((e) => (ids.includes(e.id) ? { ...e, kind } : e)));
+    if (!idRef.current) return;
+    void (async () => {
+      const { error } = await supabase.from("calendar_events").update({ kind }).in("id", ids);
+      if (error) {
+        setEvents(previous);
+        reportWriteError("these events", error.message);
+      }
+    })();
   }, []);
 
-
   const removeEvent = useCallback((id: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id));
-    if (idRef.current) void supabase.from("calendar_events").delete().eq("id", id);
+    const previous = eventsRef.current;
+    setEvents(previous.filter((e) => e.id !== id));
+    if (!idRef.current) return;
+    void (async () => {
+      const { error } = await supabase.from("calendar_events").delete().eq("id", id);
+      if (error) {
+        setEvents(previous);
+        reportWriteError("this deletion", error.message);
+      }
+    })();
   }, []);
 
   return { events, loading, addEvent, updateEvent, setKindMany, removeEvent };
