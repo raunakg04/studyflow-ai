@@ -9,7 +9,7 @@ export function toDateKey(d: Date) {
 
 export function fromDateKey(key: string) {
   const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1);
+  return new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
 }
 
 export function addDays(d: Date, n: number) {
