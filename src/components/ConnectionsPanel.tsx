@@ -174,6 +174,17 @@ function ConnectionCard({
             )}
             Sync now
           </Button>
+          {onReconnect ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full"
+              disabled={busy || disabled}
+              onClick={onReconnect}
+            >
+              <Link2 className="size-3.5" /> {reconnectLabel}
+            </Button>
+          ) : null}
           <Button
             size="sm"
             variant="ghost"
