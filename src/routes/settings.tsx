@@ -2,8 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
-import { Check, LogOut, Plug } from "lucide-react";
+import { Check, LogOut, Moon, Plug, Sun } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { RequireAuth } from "@/components/RequireAuth";
+import { useTheme } from "@/lib/use-theme";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -36,7 +38,10 @@ function SettingsPage() {
 
   return (
     <AppShell title="Preferences" subtitle="The assistant plans around everything here">
+      <RequireAuth>
       <div className="space-y-4">
+        <AppearanceSection />
+
         <section className="rounded-3xl bg-card p-5 shadow-soft">
           <h2 className="text-base font-semibold">About you</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -146,7 +151,36 @@ function SettingsPage() {
 
         <AccountSection />
       </div>
+      </RequireAuth>
     </AppShell>
+  );
+}
+
+function AppearanceSection() {
+  const { theme, setTheme, hydrated } = useTheme();
+  const dark = theme === "dark";
+
+  return (
+    <section className="rounded-3xl bg-card p-5 shadow-soft">
+      <h2 className="text-base font-semibold">Appearance</h2>
+      <div className="mt-4 flex items-center gap-3 rounded-2xl bg-surface p-4">
+        <span className="flex size-9 items-center justify-center rounded-xl bg-card">
+          {dark ? <Moon className="size-4 text-primary" /> : <Sun className="size-4 text-primary" />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <Label htmlFor="dark-mode" className="font-medium">
+            Dark mode
+          </Label>
+          <p className="text-sm text-muted-foreground">Easier on the eyes for late study sessions.</p>
+        </div>
+        <Switch
+          id="dark-mode"
+          checked={dark}
+          disabled={!hydrated}
+          onCheckedChange={(on) => setTheme(on ? "dark" : "light")}
+        />
+      </div>
+    </section>
   );
 }
 
