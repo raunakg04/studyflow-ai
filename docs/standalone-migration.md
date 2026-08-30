@@ -1,6 +1,6 @@
-# Migrating StudyFlow to your own GitHub + Supabase + Vercel
+# Migrating Tempo to your own GitHub + Supabase + Vercel
 
-This is the runbook for standing up StudyFlow outside Lovable, on a Supabase project in your
+This is the runbook for standing up Tempo outside Lovable, on a Supabase project in your
 own account, deployed to Vercel. The Lovable Cloud database stays untouched until you have
 verified the standalone deployment (final section).
 

@@ -15,16 +15,16 @@ import { useProfile } from "@/lib/profile-store";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Preferences — StudyFlow" },
+      { title: "Preferences — Tempo" },
       {
         name: "description",
         content:
-          "Adjust your study rhythm, availability, focus block length, and connected accounts so StudyFlow schedules around your real life.",
+          "Adjust your study rhythm, availability, focus block length, and connected accounts so Tempo schedules around your real life.",
       },
-      { property: "og:title", content: "Preferences — StudyFlow" },
+      { property: "og:title", content: "Preferences — Tempo" },
       {
         property: "og:description",
-        content: "Tune the routines and connections StudyFlow uses to build your schedule.",
+        content: "Tune the routines and connections Tempo uses to build your schedule.",
       },
     ],
   }),

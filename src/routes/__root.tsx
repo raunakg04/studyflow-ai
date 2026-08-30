@@ -80,13 +80,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "StudyFlow — AI study planner" },
+      { title: "Tempo — AI study planner" },
       {
         name: "description",
         content:
-          "StudyFlow turns Canvas deadlines, your calendar, and your routines into a study schedule that adapts with your week.",
+          "Tempo turns Canvas deadlines, your calendar, and your routines into a study schedule that adapts with your week.",
       },
-      { property: "og:title", content: "StudyFlow — AI study planner" },
+      { property: "og:title", content: "Tempo — AI study planner" },
       {
         property: "og:description",
         content: "Deadlines, tasks, and time-blocking in one adaptive student planner.",

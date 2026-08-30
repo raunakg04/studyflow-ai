@@ -99,7 +99,7 @@ export function AppShell({
           <span className="flex size-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
             <Sparkles className="size-4" />
           </span>
-          <span className="font-display text-lg font-semibold">StudyFlow</span>
+          <span className="font-display text-lg font-semibold">Tempo</span>
         </Link>
 
         <nav className="flex flex-col gap-1">

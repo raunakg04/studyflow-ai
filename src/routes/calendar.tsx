@@ -28,13 +28,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/calendar")({
   head: () => ({
     meta: [
-      { title: "Weekly schedule — StudyFlow" },
+      { title: "Weekly schedule — Tempo" },
       {
         name: "description",
         content:
           "See classes, commitments, and AI-generated study blocks in one week view, with the reasoning behind every scheduled block.",
       },
-      { property: "og:title", content: "Weekly schedule — StudyFlow" },
+      { property: "og:title", content: "Weekly schedule — Tempo" },
       {
         property: "og:description",
         content: "Your classes, work, and AI-planned study blocks in a single adaptive calendar.",

@@ -25,13 +25,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "Set up your routine — StudyFlow" },
+      { title: "Set up your routine — Tempo" },
       {
         name: "description",
         content:
-          "Answer a few questions about your rhythm, availability, and commitments so StudyFlow can build a study schedule that actually fits your week.",
+          "Answer a few questions about your rhythm, availability, and commitments so Tempo can build a study schedule that actually fits your week.",
       },
-      { property: "og:title", content: "Set up your routine — StudyFlow" },
+      { property: "og:title", content: "Set up your routine — Tempo" },
       {
         property: "og:description",
         content: "A two-minute setup so your first schedule is realistic from day one.",
@@ -75,7 +75,7 @@ function Onboarding() {
             <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Sparkles className="size-4" />
             </span>
-            <span className="font-display font-semibold">StudyFlow</span>
+            <span className="font-display font-semibold">Tempo</span>
           </Link>
           <span className="ml-auto text-sm text-muted-foreground">
             Step {step + 1} of {steps.length}

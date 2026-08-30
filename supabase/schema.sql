@@ -1,4 +1,4 @@
--- StudyFlow consolidated schema (generated from supabase/migrations, in order).
+-- Tempo consolidated schema (generated from supabase/migrations, in order).
 -- Apply to a fresh Supabase project via the SQL editor, or prefer: supabase link && supabase db push
 
 -- ===== 20260822111836_23e8cc40-9538-4440-82f9-255c20be4c1f.sql =====

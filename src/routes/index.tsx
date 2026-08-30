@@ -10,17 +10,17 @@ import { courses, events, formatHour, tasks } from "@/lib/mock-data";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "StudyFlow — AI study planner for students" },
+      { title: "Tempo — AI study planner for students" },
       {
         name: "description",
         content:
-          "StudyFlow turns your Canvas deadlines, calendar, and routines into a realistic study schedule that adapts as your week changes.",
+          "Tempo turns your Canvas deadlines, calendar, and routines into a realistic study schedule that adapts as your week changes.",
       },
-      { property: "og:title", content: "StudyFlow — AI study planner for students" },
+      { property: "og:title", content: "Tempo — AI study planner for students" },
       {
         property: "og:description",
         content:
-          "One place for deadlines, tasks, and time-blocking. StudyFlow builds and adapts your study schedule automatically.",
+          "One place for deadlines, tasks, and time-blocking. Tempo builds and adapts your study schedule automatically.",
       },
     ],
   }),
@@ -143,7 +143,7 @@ function Landing() {
             <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Sparkles className="size-4" />
             </span>
-            <span className="font-display text-lg font-semibold">StudyFlow</span>
+            <span className="font-display text-lg font-semibold">Tempo</span>
           </Link>
 
           <div className="flex items-center gap-3">
@@ -182,7 +182,7 @@ function Landing() {
           Your semester, time-blocked for you.
         </h1>
         <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          StudyFlow pulls in your Canvas deadlines, classes, and routines, then builds a realistic
+          Tempo pulls in your Canvas deadlines, classes, and routines, then builds a realistic
           study schedule — and quietly rebuilds it whenever your week shifts.
         </p>
 

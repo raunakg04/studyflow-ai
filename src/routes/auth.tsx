@@ -16,16 +16,16 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — StudyFlow" },
+      { title: "Sign in — Tempo" },
       {
         name: "description",
         content:
-          "Sign in to StudyFlow with Google to sync your deadlines, tasks, and adaptive study schedule across devices.",
+          "Sign in to Tempo with Google to sync your deadlines, tasks, and adaptive study schedule across devices.",
       },
-      { property: "og:title", content: "Sign in — StudyFlow" },
+      { property: "og:title", content: "Sign in — Tempo" },
       {
         property: "og:description",
-        content: "Access your StudyFlow planner and keep your study schedule in sync.",
+        content: "Access your Tempo planner and keep your study schedule in sync.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -159,7 +159,7 @@ function AuthPage() {
         <span className="flex size-9 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
           <Sparkles className="size-4" />
         </span>
-        <span className="font-display text-lg font-semibold">StudyFlow</span>
+        <span className="font-display text-lg font-semibold">Tempo</span>
       </Link>
 
       <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-6 shadow-soft">
@@ -229,7 +229,7 @@ function AuthPage() {
         </form>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          {mode === "signin" ? "New to StudyFlow?" : "Already have an account?"}{" "}
+          {mode === "signin" ? "New to Tempo?" : "Already have an account?"}{" "}
           <button
             type="button"
             className="font-medium text-primary hover:underline"

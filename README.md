@@ -1,4 +1,4 @@
-# StudyFlow AI
+# Tempo AI
 
 Build an app that allows students to manage their tasks and deadlines. The tool should be driven by an AI assistant that combines their deadlines, calendar, tasks, and personal routines to automatically create and continuously adapt a realistic schedule. The goal here is reducing time taken to manually time-block, and increasing productivity by combining all of a students tasks and deadlines into one platform.
 

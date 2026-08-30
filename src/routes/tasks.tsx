@@ -29,13 +29,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/tasks")({
   head: () => ({
     meta: [
-      { title: "Tasks & deadlines — StudyFlow" },
+      { title: "Tasks & deadlines — Tempo" },
       {
         name: "description",
         content:
           "Every assignment, reading, and personal to-do in one list, grouped by urgency with AI-suggested study blocks you can approve or adjust.",
       },
-      { property: "og:title", content: "Tasks & deadlines — StudyFlow" },
+      { property: "og:title", content: "Tasks & deadlines — Tempo" },
       {
         property: "og:description",
         content: "All your Canvas assignments and personal tasks in one prioritised list.",
