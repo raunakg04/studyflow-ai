@@ -16,6 +16,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as OauthGoogleCalendarReturnRouteImport } from './routes/oauth.google-calendar.return'
+import { Route as ApiPublicGoogleOauthCallbackRouteImport } from './routes/api/public/google.oauth.callback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -53,6 +54,12 @@ const OauthGoogleCalendarReturnRoute =
     path: '/oauth/google-calendar/return',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGoogleOauthCallbackRoute =
+  ApiPublicGoogleOauthCallbackRouteImport.update({
+    id: '/api/public/google/oauth/callback',
+    path: '/api/public/google/oauth/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
   '/oauth/google-calendar/return': typeof OauthGoogleCalendarReturnRoute
+  '/api/public/google/oauth/callback': typeof ApiPublicGoogleOauthCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -71,6 +79,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
   '/oauth/google-calendar/return': typeof OauthGoogleCalendarReturnRoute
+  '/api/public/google/oauth/callback': typeof ApiPublicGoogleOauthCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -81,6 +90,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/tasks': typeof TasksRoute
   '/oauth/google-calendar/return': typeof OauthGoogleCalendarReturnRoute
+  '/api/public/google/oauth/callback': typeof ApiPublicGoogleOauthCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -92,6 +102,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/oauth/google-calendar/return'
+    | '/api/public/google/oauth/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -101,6 +112,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/oauth/google-calendar/return'
+    | '/api/public/google/oauth/callback'
   id:
     | '__root__'
     | '/'
@@ -110,6 +122,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/oauth/google-calendar/return'
+    | '/api/public/google/oauth/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -120,6 +133,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   TasksRoute: typeof TasksRoute
   OauthGoogleCalendarReturnRoute: typeof OauthGoogleCalendarReturnRoute
+  ApiPublicGoogleOauthCallbackRoute: typeof ApiPublicGoogleOauthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -173,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OauthGoogleCalendarReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/google/oauth/callback': {
+      id: '/api/public/google/oauth/callback'
+      path: '/api/public/google/oauth/callback'
+      fullPath: '/api/public/google/oauth/callback'
+      preLoaderRoute: typeof ApiPublicGoogleOauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -184,6 +205,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   TasksRoute: TasksRoute,
   OauthGoogleCalendarReturnRoute: OauthGoogleCalendarReturnRoute,
+  ApiPublicGoogleOauthCallbackRoute: ApiPublicGoogleOauthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
