@@ -1,21 +1,19 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 
 // Lovable auto-provisions APP_USER_CONNECTION_KEY_SECRET (base64, 32 bytes)
-// when an App User Connector is linked. Fall back to the service role key
-// material so Canvas tokens can still be encrypted on self-hosted deploys.
+// when an App User Connector is linked. Fall back to deriving a stable key
+// from the service role secret so Canvas tokens can still be encrypted on
+// self-hosted deploys.
 function key(): Buffer {
   const raw = process.env['APP_USER_CONNECTION_KEY_SECRET'];
-  if (raw) return Buffer.from(raw, "base64");
+  if (raw) {
+    const buf = Buffer.from(raw, "base64");
+    if (buf.length === 32) return buf;
+    return createHash("sha256").update(raw).digest();
+  }
   const fallback = process.env['SUPABASE_SERVICE_ROLE_KEY'];
   if (!fallback) throw new Error("No encryption secret available on the server");
-  return createHashKey(fallback);
-}
-
-function createHashKey(seed: string): Buffer {
-  // Derive a stable 32-byte key from the seed.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { createHash } = require("node:crypto") as typeof import("node:crypto");
-  return createHash("sha256").update(seed).digest();
+  return createHash("sha256").update(fallback).digest();
 }
 
 export function encryptSecret(plaintext: string): string {
