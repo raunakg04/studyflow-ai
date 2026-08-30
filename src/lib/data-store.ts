@@ -64,9 +64,10 @@ function taskToRow(task: Task, userId: string) {
   };
 }
 
-/** Maps only the fields present in a patch to their database columns. */
+type TaskUpdate = Partial<ReturnType<typeof taskToRow>>;
+
 function taskPatchToRow(patch: Partial<Task>) {
-  const row: Record<string, unknown> = {};
+  const row: TaskUpdate = {};
   if (patch.title !== undefined) row.title = patch.title;
   if (patch.course !== undefined) row.course = patch.course;
   if (patch.due !== undefined) row.due = patch.due || null;
@@ -130,9 +131,10 @@ function eventToRow(event: CalendarEvent, userId: string) {
   };
 }
 
-/** Maps only the fields present in a patch to their database columns. */
+type EventUpdate = Partial<ReturnType<typeof eventToRow>>;
+
 function eventPatchToRow(patch: Partial<CalendarEvent>) {
-  const row: Record<string, unknown> = {};
+  const row: EventUpdate = {};
   if (patch.title !== undefined) row.title = patch.title;
   if (patch.course !== undefined) row.course = patch.course;
   if (patch.day !== undefined) row.day = patch.day;
