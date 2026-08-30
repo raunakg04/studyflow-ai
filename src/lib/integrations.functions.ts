@@ -15,89 +15,28 @@ export const getIntegrations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { readStatuses } = await import("@/lib/integration-status.server");
+    const { googleOAuthConfigured } = await import("@/lib/google-oauth.server");
     const statuses = await readStatuses(context.supabase);
     return {
       statuses: statuses as IntegrationStatusDTO[],
-      googleConfigured: Boolean(
-        process.env['GOOGLE_CALENDAR_APP_USER_CONNECTOR_CLIENT_API_KEY'],
-      ),
+      googleConfigured: googleOAuthConfigured(),
     };
   });
 
 export const startGoogleConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const clientAPIKey = process.env['GOOGLE_CALENDAR_APP_USER_CONNECTOR_CLIENT_API_KEY'];
-    if (!clientAPIKey) {
+    const { buildConsentUrl, googleOAuthConfigured, redirectUriFor } = await import(
+      "@/lib/google-oauth.server"
+    );
+    if (!googleOAuthConfigured()) {
       throw new Error(
-        "Google Calendar isn't set up for this app yet. Ask the owner to link the Google Calendar connector.",
+        "Google Calendar isn't set up for this app yet. Add the Google OAuth client ID and secret.",
       );
     }
-    const { authorizeAppUserOAuth } = await import("@/integrations/lovable/appUserConnector");
-    const { getConnectionKeyForUser } = await import("@/lib/app-user-connections.server");
-    const { GATEWAY_BASE_URL, GOOGLE_CONNECTOR_ID, GOOGLE_SCOPES } = await import(
-      "@/lib/google-calendar.server"
-    );
-
     const request = getRequest();
     if (!request) throw new Error("OAuth must start from an app request.");
-    const url = new URL(request.url);
-    const sandboxHost =
-      url.hostname === "localhost" ? request.headers.get("x-forwarded-host") : null;
-    const returnUrl = new URL(
-      "/oauth/google-calendar/return",
-      sandboxHost ? `https://${sandboxHost}` : url.origin,
-    ).toString();
-
-    const existing = await getConnectionKeyForUser(context.userId, GOOGLE_CONNECTOR_ID);
-
-    const { authorizationUrl } = await authorizeAppUserOAuth({
-      gatewayBaseUrl: GATEWAY_BASE_URL,
-      connectorId: GOOGLE_CONNECTOR_ID,
-      appUserId: context.userId,
-      clientAPIKey,
-      returnUrl,
-      ...(existing ? { connectionAPIKey: existing } : {}),
-      credentialsConfiguration: { scopes: GOOGLE_SCOPES },
-    });
-    return { authorizationUrl };
-  });
-
-export const completeGoogleConnect = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: { code: string }) => {
-    if (!input?.code || typeof input.code !== "string") throw new Error("Missing OAuth code");
-    return { code: input.code };
-  })
-  .handler(async ({ data, context }) => {
-    const { exchangeAppUserOAuthCode } = await import("@/integrations/lovable/appUserConnector");
-    const { saveConnectionKeyForUser } = await import("@/lib/app-user-connections.server");
-    const { writeStatus } = await import("@/lib/integration-status.server");
-    const { GATEWAY_BASE_URL, GOOGLE_CONNECTOR_ID, googleAccountLabel } = await import(
-      "@/lib/google-calendar.server"
-    );
-
-    const { connectionAPIKey, connectorId } = await exchangeAppUserOAuthCode(
-      GATEWAY_BASE_URL,
-      data.code,
-    );
-    if (connectorId !== GOOGLE_CONNECTOR_ID) {
-      throw new Error("OAuth completion returned the wrong connector");
-    }
-    await saveConnectionKeyForUser(context.userId, GOOGLE_CONNECTOR_ID, connectionAPIKey);
-
-    let label = "Google account";
-    try {
-      label = await googleAccountLabel(connectionAPIKey);
-    } catch {
-      /* label is cosmetic */
-    }
-    await writeStatus(context.supabase, context.userId, "google_calendar", {
-      status: "connected",
-      accountLabel: label,
-      lastSyncError: null,
-    });
-    return { ok: true };
+    return { authorizationUrl: buildConsentUrl(context.userId, redirectUriFor(request)) };
   });
 
 export const syncGoogleCalendar = createServerFn({ method: "POST" })
@@ -120,22 +59,17 @@ export const syncGoogleCalendar = createServerFn({ method: "POST" })
 export const disconnectGoogleCalendar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { disconnectAppUser } = await import("@/integrations/lovable/appUserConnector");
     const { getConnectionKeyForUser, deleteConnectionKeyForUser } = await import(
       "@/lib/app-user-connections.server"
     );
-    const { GATEWAY_BASE_URL, GOOGLE_CONNECTOR_ID } = await import("@/lib/google-calendar.server");
+    const { GOOGLE_CONNECTOR_ID, revokeToken } = await import("@/lib/google-oauth.server");
 
-    const key = await getConnectionKeyForUser(context.userId, GOOGLE_CONNECTOR_ID);
-    if (key) {
+    const refreshToken = await getConnectionKeyForUser(context.userId, GOOGLE_CONNECTOR_ID);
+    if (refreshToken) {
       try {
-        await disconnectAppUser({
-          gatewayBaseUrl: GATEWAY_BASE_URL,
-          connectionAPIKey: key,
-          connectorId: GOOGLE_CONNECTOR_ID,
-        });
+        await revokeToken(refreshToken);
       } catch (error) {
-        console.error("[google_calendar] gateway disconnect failed", error);
+        console.error("[google_calendar] revoke failed", error);
       }
       await deleteConnectionKeyForUser(context.userId, GOOGLE_CONNECTOR_ID);
     }
@@ -146,6 +80,7 @@ export const disconnectGoogleCalendar = createServerFn({ method: "POST" })
       .eq("provider", "google_calendar");
     return { ok: true };
   });
+
 
 export const connectCanvas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

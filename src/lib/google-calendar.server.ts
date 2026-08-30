@@ -1,16 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { callAsAppUser } from "@/integrations/lovable/appUserConnector";
 import { getConnectionKeyForUser } from "@/lib/app-user-connections.server";
+import { accessTokenFromRefresh, GOOGLE_CONNECTOR_ID } from "@/lib/google-oauth.server";
 import { writeStatus } from "@/lib/integration-status.server";
 
-export const GATEWAY_BASE_URL = "https://connector-gateway.lovable.dev";
-export const GOOGLE_CONNECTOR_ID = "google_calendar";
-export const GOOGLE_SCOPES = [
-  "https://www.googleapis.com/auth/userinfo.email",
-  "https://www.googleapis.com/auth/userinfo.profile",
-  "https://www.googleapis.com/auth/calendar.readonly",
-];
+export { GOOGLE_CONNECTOR_ID };
+
+const API_BASE = "https://www.googleapis.com/calendar/v3";
 
 type Client = SupabaseClient<Database>;
 
@@ -38,12 +34,9 @@ function hourOf(dateTime: string) {
   return Number(match[1]) + Number(match[2]) / 60;
 }
 
-async function gcal(connectionAPIKey: string, path: string) {
-  const res = await callAsAppUser({
-    gatewayBaseUrl: GATEWAY_BASE_URL,
-    connectionAPIKey,
-    connectorId: GOOGLE_CONNECTOR_ID,
-    path,
+async function gcal(accessToken: string, path: string) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
   const text = await res.text();
   if (!res.ok) {
@@ -52,8 +45,14 @@ async function gcal(connectionAPIKey: string, path: string) {
   return JSON.parse(text || "{}");
 }
 
-export async function googleAccountLabel(connectionAPIKey: string) {
-  const list = (await gcal(connectionAPIKey, "/calendar/v3/users/me/calendarList")) as {
+export async function googleAccessToken(userId: string) {
+  const refreshToken = await getConnectionKeyForUser(userId, GOOGLE_CONNECTOR_ID);
+  if (!refreshToken) throw new Error("Google Calendar is not connected");
+  return accessTokenFromRefresh(refreshToken);
+}
+
+export async function googleAccountLabel(accessToken: string) {
+  const list = (await gcal(accessToken, "/users/me/calendarList")) as {
     items?: { id: string; primary?: boolean; summary?: string }[];
   };
   const primary = list.items?.find((c) => c.primary) ?? list.items?.[0];
@@ -61,10 +60,9 @@ export async function googleAccountLabel(connectionAPIKey: string) {
 }
 
 export async function syncGoogleCalendarForUser(supabase: Client, userId: string) {
-  const connectionAPIKey = await getConnectionKeyForUser(userId, GOOGLE_CONNECTOR_ID);
-  if (!connectionAPIKey) throw new Error("Google Calendar is not connected");
+  const accessToken = await googleAccessToken(userId);
 
-  const list = (await gcal(connectionAPIKey, "/calendar/v3/users/me/calendarList")) as {
+  const list = (await gcal(accessToken, "/users/me/calendarList")) as {
     items?: { id: string; primary?: boolean; selected?: boolean; summary?: string }[];
   };
   const calendars = (list.items ?? [])
@@ -72,8 +70,9 @@ export async function syncGoogleCalendarForUser(supabase: Client, userId: string
     .slice(0, 5);
 
   const now = new Date();
-  const until = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const timeMin = encodeURIComponent(now.toISOString());
+  const from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const until = new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000);
+  const timeMin = encodeURIComponent(from.toISOString());
   const timeMax = encodeURIComponent(until.toISOString());
 
   const rows: Record<string, unknown>[] = [];
@@ -81,9 +80,9 @@ export async function syncGoogleCalendarForUser(supabase: Client, userId: string
 
   for (const cal of calendars) {
     const data = (await gcal(
-      connectionAPIKey,
-      `/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events` +
-        `?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=100`,
+      accessToken,
+      `/calendars/${encodeURIComponent(cal.id)}/events` +
+        `?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime&maxResults=250`,
     )) as { items?: GCalEvent[] };
 
     for (const ev of data.items ?? []) {
@@ -115,19 +114,32 @@ export async function syncGoogleCalendarForUser(supabase: Client, userId: string
         external_id: externalId,
         starts_at: new Date(startISO).toISOString(),
         ends_at: new Date(endISO).toISOString(),
+        updated_at: new Date().toISOString(),
       });
     }
   }
 
-  // Google events are a read-only mirror: replace the previous import wholesale.
-  await supabase.from("calendar_events").delete().eq("source", "google");
   if (rows.length) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await supabase.from("calendar_events").insert(rows as any);
+    const { error } = await supabase
+      .from("calendar_events")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .upsert(rows as any, { onConflict: "user_id,source,external_id" });
     if (error) throw error;
   }
 
-  const label = await googleAccountLabel(connectionAPIKey);
+  // Drop previously imported events that no longer exist in Google.
+  const keep = Array.from(seen);
+  let stale = supabase
+    .from("calendar_events")
+    .delete()
+    .eq("user_id", userId)
+    .eq("source", "google");
+  if (keep.length) {
+    stale = stale.not("external_id", "in", `(${keep.map((id) => `"${id}"`).join(",")})`);
+  }
+  await stale;
+
+  const label = await googleAccountLabel(accessToken);
   await writeStatus(supabase, userId, "google_calendar", {
     status: "connected",
     accountLabel: label,

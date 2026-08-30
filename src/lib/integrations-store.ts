@@ -2,7 +2,6 @@ import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  completeGoogleConnect,
   connectCanvas,
   disconnectCanvas,
   disconnectGoogleCalendar,
@@ -16,50 +15,12 @@ import { useAuth } from "@/lib/use-auth";
 
 export type { IntegrationStatusDTO };
 
-const GOOGLE_CONNECTOR_ID = "google_calendar";
-
-function waitForOAuthCompletion(popup: Window) {
-  return new Promise<string | null>((resolve, reject) => {
-    let poll: number | undefined;
-    const cleanup = () => {
-      window.removeEventListener("message", onMessage);
-      if (poll !== undefined) window.clearInterval(poll);
-    };
-    const onMessage = (event: MessageEvent) => {
-      const type = (event.data as { type?: string })?.type;
-      if (
-        event.origin !== window.location.origin ||
-        event.source !== popup ||
-        (event.data as { connectorId?: string })?.connectorId !== GOOGLE_CONNECTOR_ID ||
-        (type !== "appUserConnectorOAuthComplete" && type !== "appUserConnectorOAuthFailed")
-      ) {
-        return;
-      }
-      cleanup();
-      if (type === "appUserConnectorOAuthComplete") {
-        const code = (event.data as { code?: string | null }).code;
-        resolve(typeof code === "string" ? code : null);
-        return;
-      }
-      popup.close();
-      reject(new Error("The Google connection was not completed."));
-    };
-    window.addEventListener("message", onMessage);
-    poll = window.setInterval(() => {
-      if (!popup.closed) return;
-      cleanup();
-      reject(new Error("The Google window closed before finishing."));
-    }, 500);
-  });
-}
-
 export function useIntegrations() {
   const { signedIn } = useAuth();
   const queryClient = useQueryClient();
 
   const fetchStatus = useServerFn(getIntegrations);
   const startGoogle = useServerFn(startGoogleConnect);
-  const completeGoogle = useServerFn(completeGoogleConnect);
   const syncGoogleFn = useServerFn(syncGoogleCalendar);
   const disconnectGoogleFn = useServerFn(disconnectGoogleCalendar);
   const connectCanvasFn = useServerFn(connectCanvas);
@@ -86,26 +47,15 @@ export function useIntegrations() {
 
   const googleConnect = useMutation({
     mutationFn: async () => {
-      const popup = window.open("", "tempo-google-oauth", "width=600,height=720");
-      if (!popup) throw new Error("Allow popups for Tempo, then try again.");
-      let code: string | null;
-      try {
-        const { authorizationUrl } = await startGoogle();
-        const completion = waitForOAuthCompletion(popup);
-        popup.location.href = authorizationUrl;
-        code = await completion;
-      } catch (error) {
-        popup.close();
-        throw error;
-      }
-      if (code) await completeGoogle({ data: { code } });
-      await syncGoogleFn();
-    },
-    onSuccess: () => {
-      refresh();
-      refreshData();
+      // Full-page redirect into Google's consent screen; the server-side
+      // callback stores the refresh token and sends the user back to /settings.
+      const { authorizationUrl } = await startGoogle();
+      window.location.assign(authorizationUrl);
+      // Keep the button in its pending state while the browser navigates away.
+      await new Promise(() => {});
     },
   });
+
 
   const googleSync = useMutation({
     mutationFn: () => syncGoogleFn(),
