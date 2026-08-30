@@ -125,7 +125,7 @@ export function useIntegrations() {
   });
 
   const canvasConnect = useMutation({
-    mutationFn: async (input: { domain: string; token: string }) => {
+    mutationFn: async (input: { feedUrl: string }) => {
       await connectCanvasFn({ data: input });
       await syncCanvasFn();
     },
