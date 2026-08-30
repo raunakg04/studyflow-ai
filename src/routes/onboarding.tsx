@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
+import { ConnectionsPanel } from "@/components/ConnectionsPanel";
 import { AvailabilityEditor } from "@/components/AvailabilityEditor";
 import { useProfile, type Profile } from "@/lib/profile-store";
 import { cn } from "@/lib/utils";
@@ -302,43 +303,9 @@ function StepBody({
   if (step === 5)
     return (
       <div className="space-y-3">
-        {[
-          {
-            key: "google" as const,
-            name: "Google Calendar",
-            desc: "Pull in classes, work shifts, and events",
-          },
-          { key: "canvas" as const, name: "Canvas", desc: "Import assignments and due dates" },
-        ].map((c) => {
-          const connected = profile.connected[c.key];
-          return (
-            <div key={c.key} className="flex items-center gap-3 rounded-3xl bg-card p-4 shadow-soft">
-              <span className="flex size-11 items-center justify-center rounded-2xl bg-surface">
-                <Plug className="size-5 text-primary" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{c.name}</p>
-                <p className="text-sm text-muted-foreground">{c.desc}</p>
-              </div>
-              <Button
-                size="sm"
-                variant={connected ? "secondary" : "default"}
-                className="rounded-full"
-                onClick={() => update({ connected: { ...profile.connected, [c.key]: !connected } })}
-              >
-                {connected ? (
-                  <>
-                    <Check className="size-3.5" /> Connected
-                  </>
-                ) : (
-                  "Connect"
-                )}
-              </Button>
-            </div>
-          );
-        })}
+        <ConnectionsPanel />
         <p className="text-center text-xs text-muted-foreground">
-          Live syncing is coming soon — for now we'll load a sample semester.
+          You can connect these later from Preferences — skip ahead if you're in a hurry.
         </p>
       </div>
     );
