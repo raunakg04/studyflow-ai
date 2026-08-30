@@ -144,7 +144,8 @@ ALTER TABLE public.calendar_events
   ADD COLUMN IF NOT EXISTS all_day boolean NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS location text NOT NULL DEFAULT '',
   ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'manual',
-  ADD COLUMN IF NOT EXISTS external_id text;
+  ADD COLUMN IF NOT EXISTS external_id text,
+  ADD COLUMN IF NOT EXISTS notes text NOT NULL DEFAULT '';
 
 CREATE UNIQUE INDEX IF NOT EXISTS calendar_events_user_source_external_idx
   ON public.calendar_events (user_id, source, external_id)
